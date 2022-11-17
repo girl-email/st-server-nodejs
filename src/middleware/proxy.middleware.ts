@@ -8,13 +8,25 @@ import {
 } from '@midwayjs/core';
 import { HttpProxyConfig, HttpProxyStrategy } from '@midwayjs/http-proxy';
 import * as axios from 'axios';
+import { NextFunction, Context } from '@midwayjs/koa';
+
+/**
+ * BFF代理层中间件
+ */
 @Middleware()
-export class HttpProxyMiddleware implements IMiddleware<any, any> {
+export class HttpProxyMiddleware implements IMiddleware<Context, NextFunction> {
   @Config('httpProxy')
   httpProxy: HttpProxyConfig;
 
   @Logger()
   logger: IMidwayLogger;
+
+
+  ignore(ctx: Context): boolean {
+    // 下面的路由将忽略此中间件
+    return ctx.path === '/'
+      || ctx.path === '/api/2';
+  }
 
   resolve(app) {
     if (app.getFrameworkType() === MidwayFrameworkType.WEB_EXPRESS) {
@@ -81,6 +93,7 @@ export class HttpProxyMiddleware implements IMiddleware<any, any> {
       if (!err || !err.response) {
         throw err || new Error('proxy unknown error');
       }
+
       return err.response;
     });
     res.type = proxyResponse.headers['content-type'];
