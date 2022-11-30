@@ -25,7 +25,7 @@ export class HttpProxyMiddleware implements IMiddleware<Context, NextFunction> {
   ignore(ctx: Context): boolean {
     // 下面的路由将忽略此中间件
     return ctx.path === '/'
-      || ctx.path === '/api/2';
+      || ctx.path === '/api/test';
   }
 
   resolve(app) {
