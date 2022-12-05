@@ -16,19 +16,13 @@ export class ConsoleService {
     /**
      * 添加控制台信息
      */
-    async addConsole(): Promise<string> {
+    async addConsole(data): Promise<string> {
         const {_id: id} = await this.consoleModel.create({
-            level: 'info',
-            content: {
-                0: '222',
-                1: '2'
-            },
-            timestamp: new Date().getTime(),
+            ...data,
             createTime: new Date()
         } as unknown as Console); // an "as" assertion, to have types for all properties
         return id;
     }
-
 
 
     async findConsole() {
