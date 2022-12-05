@@ -8,6 +8,9 @@ import { NotFoundFilter } from './filter/notfound.filter';
 import { ReportMiddleware } from './middleware/report.middleware';
 import { HttpProxyMiddleware } from './middleware/proxy.middleware';
 // import * as proxy from '@midwayjs/http-proxy';
+import * as socketio from '@midwayjs/socketio';
+import * as redis from '@midwayjs/redis';
+import * as typegoose from '@midwayjs/typegoose';
 
 @Configuration({
   imports: [
@@ -17,6 +20,9 @@ import { HttpProxyMiddleware } from './middleware/proxy.middleware';
       component: info,
       enabledEnvironment: ['local'],
     },
+    socketio,
+      redis,
+      typegoose
     // proxy
   ],
   importConfigs: [join(__dirname, './config')],
