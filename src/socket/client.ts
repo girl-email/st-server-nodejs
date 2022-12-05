@@ -12,7 +12,6 @@ import ClientUser from './serverUser';
 import {ConsoleService} from '../service/console.service';
 import {OnWSDisConnection} from "@midwayjs/core";
 
-
 /**
  * 客户端连接websocket
  */
@@ -31,7 +30,6 @@ export class ClientController {
     @Inject()
     consoleService: ConsoleService;
 
-
     /**
      * 给客户端推消息
      * @param cmd
@@ -47,8 +45,8 @@ export class ClientController {
     @OnWSConnection()
     async onConnectionMethod() {
         console.log('on client connect', this.ctx.id);
-        console.log('地址', this.ctx.handshake.address);
-        console.log('参数', this.ctx.handshake.query);
+        // console.log('地址', this.ctx.handshake.address);
+        // console.log('参数', this.ctx.handshake.query);
         this.ctx.emit('data', {
             cmd: 'connected',
             data: 'connected success'
@@ -59,15 +57,6 @@ export class ClientController {
             data: ClientUser.userList
         });
 
-
-        for (var i=0;i<1000;i++)
-        {
-            this.consoleService.addConsole()
-        }
-        // return {
-        //     cmd: 'connected',
-        //     data: 'connected success'
-        // }
     }
 
     /**
@@ -97,7 +86,6 @@ export class ClientController {
             }
         }
 
-
         switch (data.cmd) {
             case "login":
                 // @ts-ignore
@@ -105,7 +93,7 @@ export class ClientController {
                 break;
             case "log":
                 // @ts-ignore
-                this.dealLog(data) // 登陆
+                this.dealLog(data) // 处理console信息
                 break;
             default:
                 break;
@@ -113,6 +101,10 @@ export class ClientController {
     }
 
 
+    /**
+     * 监听断开连接
+     * @private
+     */
     private disconnect() {
         this.ctx.emit('disConnect', {
             cmd: 'loginSuccess',
@@ -121,7 +113,7 @@ export class ClientController {
     }
 
     /**
-     * 处理log
+     * 处理console.log
      * @param data
      * @private
      */
@@ -132,7 +124,19 @@ export class ClientController {
             return this.disconnect()
         }
 
-        // const { userId } = serverUser;
+        const id = this.consoleService.addConsole({
+            level: data.type,
+            content: data.value,
+            timeStamp: data.time,
+        })
+
+        console.log(id, '保存成功')
+
+        this.ctx.emit('data', {
+            cmd: 'log',
+            data: {id},
+            message: '保存成功'
+        })
     }
 
     /**
