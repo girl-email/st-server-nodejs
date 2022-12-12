@@ -92,8 +92,7 @@ export class ClientController {
                 this.serverLogin(data.data) // 登陆
                 break;
             case "log":
-                // @ts-ignore
-                this.dealLog(data) // 处理console信息
+                await this.dealLog(data) // 处理console信息
                 break;
             default:
                 break;
@@ -105,29 +104,34 @@ export class ClientController {
      * 监听断开连接
      * @private
      */
-    private disconnect() {
-        this.ctx.emit('disConnect', {
-            cmd: 'loginSuccess',
-            data: {},
-        })
-    }
+    // private disconnect() {
+    //     this.ctx.emit('disConnect', {
+    //         cmd: 'loginSuccess',
+    //         data: {},
+    //     })
+    // }
 
     /**
      * 处理console.log
      * @param data
      * @private
      */
-    private dealLog(data) {
+    private async dealLog(data) {
         const serverUser = ClientUser.hasUser(this.ctx.id);
         if (!serverUser) {
+            return console.log('用户不存在')
             // 断开连接
-            return this.disconnect()
+            // return this.disconnect()
         }
 
-        const id = this.consoleService.addConsole({
+        const id = await this.consoleService.addConsole({
             level: data.type,
             content: data.value,
-            timeStamp: data.time,
+            timeStamp: data.createTime,
+            // @ts-ignore
+            userId: serverUser.userId,
+            // @ts-ignore
+            userName: serverUser.userName
         })
 
         console.log(id, '保存成功')
