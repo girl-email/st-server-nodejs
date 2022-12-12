@@ -31,8 +31,8 @@ export class Console {
     /**
      * 记录时间
      */
-    @prop({ type: () => String})
-    public timestamp?: string;
+    @prop({ type: () => Number})
+    public timestamp?: Number;
 
     /**
      * 创建时间
