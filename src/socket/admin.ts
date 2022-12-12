@@ -30,8 +30,6 @@ export class AdminController {
   @OnWSConnection()
   async onConnectionMethod() {
     console.log('on client connect', this.ctx.id);
-    console.log('地址', this.ctx.handshake.address);
-    console.log('参数', this.ctx.handshake.query);
     this.ctx.emit('data', {
       cmd:'connect',
       data: 'success'
