@@ -1,10 +1,9 @@
 # 闪调-快速前端调试项目
 
-## QuickStart
+## 服务端
 
 <!-- add docs here for user -->
 
-see [midway docs][midway] for more detail.
 
 ### Development
 

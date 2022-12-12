@@ -1,12 +1,11 @@
-# my_midway_project
+# 闪调-快速前端调试项目
 
-## 快速入门
+## 服务端
 
-<!-- 在此次添加使用文档 -->
+<!-- add docs here for user -->
 
-如需进一步了解，参见 [midway 文档][midway]。
 
-### 本地开发
+### Development
 
 ```bash
 $ npm i
@@ -14,16 +13,16 @@ $ npm run dev
 $ open http://localhost:7001/
 ```
 
-### 部署
+### Deploy
 
 ```bash
 $ npm start
 ```
 
-### 内置指令
+### npm scripts
 
-- 使用 `npm run lint` 来做代码风格检查。
-- 使用 `npm test` 来执行单元测试。
+- Use `npm run lint` to check code style.
+- Use `npm test` to run unit test.
 
 
 [midway]: https://midwayjs.org
