@@ -1,5 +1,6 @@
 import {MidwayConfig} from '@midwayjs/core';
 import { Console } from '../entity/console';
+import {AppKey} from "../entity/appKey";
 
 export default {
     // use for cookie sign key, should change to your own and keep security
@@ -40,7 +41,7 @@ export default {
                     pass: ''
                 },
                 // 关联实体
-                entities: [ Console ]
+                entities: [ Console, AppKey ]
             }
         }
     },
