@@ -13,7 +13,7 @@ class ClientUser {
     constructor() {
         setInterval(() => {
             this.updateUserHeart()
-        },)
+        }, 1000 * 30)
     }
 
     private updateUserHeart() {
