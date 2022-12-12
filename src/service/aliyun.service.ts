@@ -8,28 +8,16 @@ import OpenApi, * as $OpenApi from '@alicloud/openapi-client';
 import Util, * as $Util from '@alicloud/tea-util';
 // import * as $tea from '@alicloud/tea-typescript';
 
-//构建一个阿里云客户端, 用于发起请求。
-//设置调用者（RAM用户或RAM角色）的AccessKey ID和AccessKey Secret。
-// var client = new Core({
-//   accessKeyId: 'LTAI5t8SEt8tUYHmRoUf7mdt',
-//   accessKeySecret: 'PskRHdp76M7XwPGrlmuX4uq4FnYGtY',
-//   endpoint: 'https://sts.<regionId>.aliyuncs.com',
-//   apiVersion: '2015-04-01'
-// });
-
 @Provide()
 export class AliYunService {
   /**
    * 使用AK&SK初始化账号Client
-   * @param accessKeyId
-   * @param accessKeySecret
    * @return Client
    * @throws Exception
    */
   createClient(): Sts20150401 {
     let config = new $OpenApi.Config({
-      accessKeyId: 'LTAI5tCE34s6CjJumtj8UMng',
-      accessKeySecret: 'mJvdmPPZWRVR5bexH4OhGHfsu8Wvae',
+
     });
     // 访问的域名
     config.endpoint = `sts.cn-hangzhou.aliyuncs.com`;
@@ -43,9 +31,6 @@ export class AliYunService {
     let client = this.createClient();
     let assumeRoleRequest = new $Sts20150401.AssumeRoleRequest({
       durationSeconds: 3600,
-      // policy: "your_value",
-      roleArn: "acs:ram::1113240011216296:role/zhangbotest",
-      roleSessionName: "zhangbotest",
     });
     try {
       // 复制代码运行请自行打印 API 的返回值
