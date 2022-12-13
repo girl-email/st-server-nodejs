@@ -10,23 +10,30 @@ export class User {
     @prop()
     public company?: string;
 
-    /**
-     * 项目名称
-     */
-    @prop()
-    public projectName?: string;
 
     /**
-     * 闪跳应用id
-     */
-    @prop()
-    public appId?: string;
-
-    /**
-     * appKey
+     * userName
      */
     @prop({ type: () => String})
-    public appKey?: string;
+    public userName?: string;
+
+    /**
+     * avatarUrl
+     */
+    @prop({ type: () => String})
+    public avatarUrl?: string;
+
+    /**
+     * openId
+     */
+    @prop({ type: () => String})
+    public openId?: string;
+
+    /**
+     * mobile
+     */
+    @prop({ type: () => String})
+    public mobile?: string;
 
     /**
      * 创建时间
