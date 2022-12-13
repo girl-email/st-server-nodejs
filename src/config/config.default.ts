@@ -1,6 +1,7 @@
 import {MidwayConfig} from '@midwayjs/core';
 import { Console } from '../entity/console';
 import {AppKey} from "../entity/appKey";
+import {User} from "../entity/user";
 
 export default {
     // use for cookie sign key, should change to your own and keep security
@@ -41,8 +42,14 @@ export default {
                     pass: ''
                 },
                 // 关联实体
-                entities: [ Console, AppKey ]
+                entities: [ Console, AppKey, User ]
             }
         }
     },
+
+    dingTalk: {
+        appKey: 'dingzhpule0quaxn8iak',
+        appSecret: 'I6J6n7eg5Iq56kcR0r1CZ6KEAUR9V6zHVeN_Gzbd8VUGiUx3EeaFPgYjaZSS4ytz',
+        redirect_uri: 'http://blog.yuneshow.com/api/user/auth'
+    }
 } as MidwayConfig;
