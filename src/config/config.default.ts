@@ -34,7 +34,7 @@ export default {
     mongoose: {
         dataSource: {
             default: {
-                uri: 'mongodb://localhost:27017/st',
+                uri: 'mongodb://127.0.0.1:27017/st',
                 options: {
                     useNewUrlParser: true,
                     useUnifiedTopology: true,
