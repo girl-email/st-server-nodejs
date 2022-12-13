@@ -3,7 +3,6 @@ import {ReturnModelType} from '@typegoose/typegoose';
 import {Console} from '../entity/console';
 import {Provide} from '@midwayjs/decorator';
 
-
 /**
  * 控制台信息server
  */

@@ -10,6 +10,7 @@ import {
 import {Context, Application} from '@midwayjs/socketio';
 import ClientUser from './serverUser';
 import {ConsoleService} from '../service/console.service';
+import {AKService} from '../service/ak.service';
 import {OnWSDisConnection} from "@midwayjs/core";
 
 /**
@@ -20,7 +21,7 @@ export class ClientController {
     @Inject()
     ctx: Context;
 
-    @App()
+    @App('socketIO')
     app: Application;
 
     @Init()
@@ -29,6 +30,9 @@ export class ClientController {
 
     @Inject()
     consoleService: ConsoleService;
+
+    @Inject()
+    akService: AKService;
 
     /**
      * 给客户端推消息
@@ -45,8 +49,7 @@ export class ClientController {
     @OnWSConnection()
     async onConnectionMethod() {
         console.log('on client connect', this.ctx.id);
-        // console.log('地址', this.ctx.handshake.address);
-        // console.log('参数', this.ctx.handshake.query);
+
         this.ctx.emit('data', {
             cmd: 'connected',
             data: 'connected success'
@@ -99,17 +102,21 @@ export class ClientController {
         }
     }
 
-
     /**
-     * 监听断开连接
+     * 断开连接
+     * @param theSocketId socketId
      * @private
      */
-    // private disconnect() {
-    //     this.ctx.emit('disConnect', {
-    //         cmd: 'loginSuccess',
-    //         data: {},
-    //     })
-    // }
+    private disConnect(theSocketId): void {
+        this.ctx.emit('data', {
+            cmd: 'disconnectSocket',
+            data: '',
+            message: '即将把你断开'
+        });
+        this.app.of("/").in(theSocketId).disconnectSockets();
+        ClientUser.delUser(theSocketId)
+        return
+    }
 
     /**
      * 处理console.log
@@ -119,9 +126,9 @@ export class ClientController {
     private async dealLog(data) {
         const serverUser = ClientUser.hasUser(this.ctx.id);
         if (!serverUser) {
-            return console.log('用户不存在')
+            console.log('用户不存在')
             // 断开连接
-            // return this.disconnect()
+            return this.disConnect(this.ctx.id)
         }
 
         const id = await this.consoleService.addConsole({
@@ -148,10 +155,23 @@ export class ClientController {
      * @param data
      * @private
      */
-    private serverLogin(data: {
+    private async serverLogin(data: {
         userId: Boolean;
+        appKey: string
     }) {
-        console.log(this.ctx.id, 'this.ctx.id')
+        const  { appKey } = data;
+
+        const appKeyInfo = await this.akService.findOne({appKey});
+        if (!appKeyInfo) {
+            this.ctx.emit('data', {
+                cmd: 'notFound',
+                message: 'appKey不存在'
+            })
+
+            this.disConnect(this.ctx.id)
+            return;
+        }
+
         if (!ClientUser.hasUser(this.ctx.id)) {
             if (data && data.userId) {
                 ClientUser.addUser(this.ctx.id, data)
@@ -159,15 +179,15 @@ export class ClientController {
                     cmd: 'loginSuccess',
                     data: data,
                 })
-                return
             } else {
                 this.ctx.emit('data', {
                     cmd: 'notFound',
                     message: '缺少必要参数'
                 })
-                return;
             }
+            return;
         }
+
         this.ctx.emit('data', {
             cmd: 'loginSuccess',
             data: data,

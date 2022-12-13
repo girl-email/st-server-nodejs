@@ -14,7 +14,6 @@ export class AKService {
     @InjectEntityModel(AppKey)
     AppKeyModel: ReturnModelType<typeof AppKey>;
 
-
     private appSecret = 'consoleModel'
 
     /**
@@ -26,7 +25,10 @@ export class AKService {
         return  shasum.digest('hex');
     }
 
-
+    /**
+     * 查找单条AK
+     * @param where
+     */
     async findOne(where) {
         return this.AppKeyModel.findOne().where(where).exec();
     }
