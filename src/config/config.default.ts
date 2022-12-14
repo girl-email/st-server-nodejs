@@ -51,5 +51,42 @@ export default {
         appKey: 'dingzhpule0quaxn8iak',
         appSecret: 'I6J6n7eg5Iq56kcR0r1CZ6KEAUR9V6zHVeN_Gzbd8VUGiUx3EeaFPgYjaZSS4ytz',
         redirect_uri: 'http://st.mawenqing.net/api/user/auth'
-    }
+    },
+
+    // 默认配置
+    security: {
+        csrf: {
+            enable: true,
+            type: 'ctoken',
+            useSession: false,
+            cookieName: 'csrfToken',
+            sessionName: 'csrfToken',
+            headerName: 'x-csrf-token',
+            bodyName: '_csrf',
+            queryName: '_csrf',
+            refererWhiteList: [],
+        },
+        xframe: {
+            enable: true,
+            value: 'SAMEORIGIN',
+        },
+        csp: {
+            enable: false,
+        },
+        hsts: {
+            enable: false,
+            maxAge: 365 * 24 * 3600,
+            includeSubdomains: false,
+        },
+        noopen: {
+            enable: false,
+        },
+        nosniff: {
+            enable: false,
+        },
+        xssProtection: {
+            enable: true,
+            value: '1; mode=block',
+        },
+    },
 } as MidwayConfig;
