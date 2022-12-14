@@ -14,6 +14,14 @@ export class APIController {
     @Inject()
     AliYunService: AliYunService;
 
+    @Get('/list')
+    async userList() {
+        // const data = this.userService.info();
+        const result = await this.userService.getUserList();
+
+        return {success: true, message: 'OK', data: result};
+    }
+
     @Get('/info')
     async userInfo() {
         // const data = this.userService.info();

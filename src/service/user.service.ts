@@ -88,4 +88,8 @@ export class UserService {
     saveUser(data) {
         return this.UserModel.create(data)
     }
+
+    getUserList() {
+        return this.UserModel.find().exec()
+    }
 }
