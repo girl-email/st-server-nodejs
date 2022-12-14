@@ -55,7 +55,8 @@ export class APIController {
                 openId: userInfo.openId,
                 avatarUrl: userInfo.avatarUrl,
                 userName: userInfo.nick,
-                mobile: userInfo.mobile
+                mobile: userInfo.mobile,
+                createTime: new Date()
             }
             await this.userService.saveUser(user)
         }
