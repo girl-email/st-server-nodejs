@@ -50,6 +50,6 @@ export default {
     dingTalk: {
         appKey: 'dingzhpule0quaxn8iak',
         appSecret: 'I6J6n7eg5Iq56kcR0r1CZ6KEAUR9V6zHVeN_Gzbd8VUGiUx3EeaFPgYjaZSS4ytz',
-        redirect_uri: 'http://blog.yuneshow.com/api/user/auth'
+        redirect_uri: 'http://st.mawenqing.net/api/user/auth'
     }
 } as MidwayConfig;
