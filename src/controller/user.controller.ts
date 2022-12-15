@@ -16,15 +16,12 @@ export class APIController {
 
     @Get('/list')
     async userList() {
-        // const data = this.userService.info();
         const result = await this.userService.getUserList();
-
         return {success: true, message: 'OK', data: result};
     }
 
     @Get('/info')
     async userInfo() {
-        // const data = this.userService.info();
         const data = this.ctx.cookies.get('st_user', {
             encrypt: true
         })
@@ -35,7 +32,6 @@ export class APIController {
     async getUser(@Query('uid') uid) {
         const url = this.userService.dingTalkLogin();
         this.ctx.redirect(url)
-        // return {success: true, message: 'OK', data: url};
     }
 
     /**
@@ -62,7 +58,6 @@ export class APIController {
         }
 
         this.ctx.cookies.set('st_user', JSON.stringify(user), {
-            // domain: 'localhost', // 写cookie所在的域名
             path: '/', // 写cookie所在的路径
             maxAge: 10 * 60 * 1000, // cookie有效时长
             // expires: new Date('2017-02-15'), // cookie失效时间
@@ -72,7 +67,6 @@ export class APIController {
         });
 
         this.ctx.redirect('/')
-        // return {success: true, message: 'OK', data: {result, user}};
     }
 
 }
