@@ -2,9 +2,10 @@ import {Inject, Controller, Get, Query} from '@midwayjs/decorator';
 import {Context} from '@midwayjs/koa';
 import {UserService} from '../service/user.service';
 import {AliYunService} from '../service/aliyun.service';
+import BaseController from "../core/baseController";
 
 @Controller('/api/user')
-export class APIController {
+export class UserController  extends BaseController {
     @Inject()
     ctx: Context;
 
@@ -17,7 +18,8 @@ export class APIController {
     @Get('/list')
     async userList() {
         const result = await this.userService.getUserList();
-        return {success: true, message: 'OK', data: result};
+
+        return this.success(result)
     }
 
     @Get('/info')
