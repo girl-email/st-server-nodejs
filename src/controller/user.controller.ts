@@ -4,6 +4,10 @@ import {UserService} from '../service/user.service';
 import {AliYunService} from '../service/aliyun.service';
 import BaseController from "../core/baseController";
 
+
+/**
+ * 闪调用户控制器
+ */
 @Controller('/api/user')
 export class UserController  extends BaseController {
     @Inject()
@@ -31,7 +35,7 @@ export class UserController  extends BaseController {
     }
 
     @Get('/login')
-    async getUser(@Query('uid') uid) {
+    async getUser() {
         const url = this.userService.dingTalkLogin();
         this.ctx.redirect(url)
     }
