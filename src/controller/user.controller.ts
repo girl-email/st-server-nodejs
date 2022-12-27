@@ -4,12 +4,11 @@ import {UserService} from '../service/user.service';
 import {AliYunService} from '../service/aliyun.service';
 import BaseController from "../core/baseController";
 
-
 /**
  * 闪调用户控制器
  */
 @Controller('/api/user')
-export class UserController  extends BaseController {
+export class UserController extends BaseController {
     @Inject()
     ctx: Context;
 
@@ -19,13 +18,18 @@ export class UserController  extends BaseController {
     @Inject()
     AliYunService: AliYunService;
 
+    /**
+     * 用户列表
+     */
     @Get('/list')
     async userList() {
         const result = await this.userService.getUserList();
-
         return this.success(result)
     }
 
+    /**
+     * 当前用户信息
+     */
     @Get('/info')
     async userInfo() {
         const data = this.ctx.cookies.get('st_user', {
@@ -34,6 +38,10 @@ export class UserController  extends BaseController {
         return {success: true, message: 'OK', data: JSON.parse(data)};
     }
 
+    /**
+     * 用户登陆
+     * @description 当前仅限钉钉登陆
+     */
     @Get('/login')
     async getUser() {
         const url = this.userService.dingTalkLogin();
