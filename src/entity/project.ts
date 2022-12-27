@@ -34,6 +34,14 @@ export class Project {
     @prop({ type: () => String})
     public appKey?: string;
 
+
+    /**
+     * userId
+     */
+    @prop({ type: () => String})
+    public userId: string;
+
+
     /**
      * 创建时间
      */

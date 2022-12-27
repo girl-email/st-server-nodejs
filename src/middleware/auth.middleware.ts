@@ -1,6 +1,6 @@
 import {IMiddleware} from '@midwayjs/core';
 import {Middleware} from '@midwayjs/decorator';
-import {NextFunction, Context} from '@midwayjs/koa';
+import {Context, NextFunction} from '@midwayjs/koa';
 
 @Middleware()
 export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
@@ -20,13 +20,14 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
             if (!data) {
                 return {success: false, message: '未登陆'};
             }
-            const result = await next()
+
+
             // 返回给上一个中间件的结果
-            return result;
+            return await next();
         };
     }
 
     static getName(): string {
-        return 'report';
+        return 'auth';
     }
 }
