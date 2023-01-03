@@ -14,12 +14,6 @@ export class UserService {
     @InjectEntityModel(User)
     UserModel: ReturnModelType<typeof User>;
 
-
-    getAssessTokenByCode() {
-
-
-    }
-
     /**
      * 根据授权回调的authCode获取用户信息
      * 钉钉文档地址 https://open.dingtalk.com/document/isvapp-server/obtain-user-token#topic-2042816
@@ -28,7 +22,7 @@ export class UserService {
         const apiUrl = "https://api.dingtalk.com/v1.0/oauth2/userAccessToken";
 
         const result = await makeHttpRequest(apiUrl, {
-            data:{
+            data: {
                 clientId: this.DingTalkConfig.appKey,
                 clientSecret: this.DingTalkConfig.appSecret,
                 code: code,
@@ -36,7 +30,7 @@ export class UserService {
             },
             dataType: 'json', // 返回的数据格式
             method: 'POST',
-            contentType:'json',
+            contentType: 'json',
         });
 
         return result.data
@@ -47,11 +41,11 @@ export class UserService {
 
         const result = await makeHttpRequest(apiUrl, {
             headers: {
-              'x-acs-dingtalk-access-token': accessToken
+                'x-acs-dingtalk-access-token': accessToken
             },
             dataType: 'json', // 返回的数据格式
             method: 'GET',
-            contentType:'json',
+            contentType: 'json',
         });
 
         return result.data
@@ -78,12 +72,9 @@ export class UserService {
     }
 
 
-
     findUser(where) {
         return this.UserModel.findOne().where(where).exec();
     }
-
-
 
     saveUser(data) {
         return this.UserModel.create(data)
