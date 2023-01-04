@@ -56,7 +56,7 @@ export class UserController extends BaseController {
     async auth(@Query('authCode') authCode) {
         const result = await this.userService.userAccessToken(authCode);
         if (!result.accessToken) {
-            return {success: false, message: '', data: result};
+            return this.fail()
         }
         const userInfo = await this.userService.getUserInfo(result.accessToken)
         let user: any = await this.userService.findUser({openId: userInfo.openId})

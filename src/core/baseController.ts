@@ -15,4 +15,15 @@ export default class BaseController {
            message
        }
     }
+
+    /**
+     *
+     */
+    fail(data={}, message = '') {
+        return {
+            success: false,
+            data,
+            message
+        }
+    }
 }
