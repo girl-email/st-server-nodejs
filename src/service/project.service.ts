@@ -16,7 +16,14 @@ export class ProjectService {
     private appSecret = 'consoleModel'
 
     /**
-     * 添加控制台信息
+     * 项目列表
+     */
+    getList(where?: any): Promise<any> {
+        return this.ProjectModel.find().where(where).exec();
+    }
+
+    /**
+     * 创建appKey
      */
     createAppKey(id = ""): Promise<string> {
         const shasum = crypto.createHash('sha1');//返回sha1哈希算法
@@ -28,13 +35,35 @@ export class ProjectService {
      * 创建项目
      */
     async createProject(param: Project) {
-
         const {_id: id} = await this.ProjectModel.create({
             projectName: param.projectName,
             projectDesc: param.projectDesc,
         });
 
-        const appKey = this.createAppKey(id);
+        const appKey: string = await this.createAppKey(id);
+
+        const updateRes = await this.ProjectModel.update({
+            appKey
+        }).where({_id: id}).exec()
+
+        return {
+            id,
+            updateRes
+        }
+    }
+
+
+    /**
+     * 删除项目
+     */
+    async deleteProject(param: Project) {
+        // @ts-ignore
+        const {_id: id} = await this.ProjectModel.deleteOne({
+            projectName: param.projectName,
+            projectDesc: param.projectDesc,
+        }).exec();
+
+        const appKey: string = await this.createAppKey(id);
 
         const updateRes = await this.ProjectModel.update({
             appKey
