@@ -38,6 +38,7 @@ export class ProjectService {
         const {_id: id} = await this.ProjectModel.create({
             projectName: param.projectName,
             projectDesc: param.projectDesc,
+            userId: param.userId
         });
 
         const appKey: string = await this.createAppKey(id);
@@ -56,23 +57,12 @@ export class ProjectService {
     /**
      * 删除项目
      */
-    async deleteProject(param: Project) {
+    async deleteProject(id: any) {
         // @ts-ignore
-        const {_id: id} = await this.ProjectModel.deleteOne({
-            projectName: param.projectName,
-            projectDesc: param.projectDesc,
+        const result = await this.ProjectModel.deleteOne({
+            _id: id,
         }).exec();
-
-        const appKey: string = await this.createAppKey(id);
-
-        const updateRes = await this.ProjectModel.update({
-            appKey
-        }).where({_id: id}).exec()
-
-        return {
-            id,
-            updateRes
-        }
+        return result
     }
 
     /**

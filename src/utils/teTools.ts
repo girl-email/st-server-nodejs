@@ -553,7 +553,7 @@ export class TeMap<T>{
   auto_size: number = 0;
   _list: PriorityQueue = new PriorityQueue();
 
-  constructor(_data?: Object) {
+  yyconstructor(_data?: Object) {
     if (_data) {
       this._data = _data;
     }
@@ -929,6 +929,7 @@ export module TeMath {
     return Math.sqrt(total_diff_x / (args.length - 1));
   }
 }
+
 export function Handle(caller: any, cb: Function, ...args) {
   if (typeof cb != 'function' && typeof caller == 'function') {
     return caller;

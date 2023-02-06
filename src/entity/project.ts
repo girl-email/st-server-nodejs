@@ -45,6 +45,6 @@ export class Project {
     /**
      * 创建时间
      */
-    @prop({ type: () => Date})
+    @prop({ type: () => Date, default: () => new Date()})
     public createTime?: Date;
 }

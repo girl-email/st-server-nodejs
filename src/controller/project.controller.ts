@@ -1,13 +1,14 @@
-import {Inject, Controller, Get, Query, Del} from '@midwayjs/decorator';
+import {Inject, Controller, Get, Del, Body, Param} from '@midwayjs/decorator';
 import {Context} from '@midwayjs/koa';
 import {UserService} from '../service/user.service';
 import {ProjectService} from '../service/project.service';
 import {AliYunService} from '../service/aliyun.service';
 import BaseController from "../core/baseController";
 import {Put} from "@midwayjs/core";
+import { AddProjectDTO } from './../dto/project';
 
 /**
- * 闪调项目控制器
+ * 闪调项目管理控制器
  */
 @Controller('/api/project')
 export class ProjectController extends BaseController {
@@ -28,7 +29,8 @@ export class ProjectController extends BaseController {
      */
     @Get('/list')
     async getList() {
-        const result = await this.projectService.getList();
+        const userId = this.ctx.user._id
+        const result = await this.projectService.getList({userId});
         // TODO 写三行逻辑
         return this.success(result)
     }
@@ -37,17 +39,21 @@ export class ProjectController extends BaseController {
      * 删除
      */
     @Del('/:id')
-    async userInfo(param) {
-        const result = await this.projectService.deleteProject(param);
-        return this.success(result)
+    async userInfo(@Param('id') id) {
+        const result = await this.projectService.deleteProject(id);
+        if (!result.deletedCount) {
+            return this.fail([], '该项目不存在')
+        }
+        return this.success(result, '操作成功')
     }
 
     /**
      * 增加项目
      */
     @Put('/')
-    async getUser(@Query() param) {
-        const result = await this.projectService.createProject(param);
+    async addProject(@Body() param: AddProjectDTO) {
+        const userId = this.ctx.user._id
+        const result = await this.projectService.createProject({...param, userId});
         return this.success(result)
     }
 }

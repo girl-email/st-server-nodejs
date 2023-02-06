@@ -8,6 +8,7 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
         // 下面的路由将忽略此中间件
         return ctx.path === '/api/user/auth'
             || ctx.path === '/api/user/login'
+            || ctx.path === '/api/user/loginAccount'
             || ctx.path === '/api'
             || ctx.path === '/';
     }
@@ -21,7 +22,7 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
                 return {success: false, message: '未登陆'};
             }
 
-
+            ctx.user = JSON.parse(data)
             // 返回给上一个中间件的结果
             return await next();
         };
