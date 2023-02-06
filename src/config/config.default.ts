@@ -2,6 +2,7 @@ import {MidwayConfig} from '@midwayjs/core';
 import { Console } from '../entity/console';
 import {AppKey} from "../entity/appKey";
 import {User} from "../entity/user";
+import {Project} from "../entity/project";
 
 export default {
     // use for cookie sign key, should change to your own and keep security
@@ -42,7 +43,7 @@ export default {
                     pass: ''
                 },
                 // 关联实体
-                entities: [ Console, AppKey, User ]
+                entities: [ Console, AppKey, User, Project ]
             }
         }
     },
@@ -56,9 +57,9 @@ export default {
     // 默认配置
     security: {
         csrf: {
-            enable: true,
+            enable: false,
             type: 'ctoken',
-            useSession: false,
+            useSession: true,
             cookieName: 'csrfToken',
             sessionName: 'csrfToken',
             headerName: 'x-csrf-token',

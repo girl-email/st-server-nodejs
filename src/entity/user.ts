@@ -1,15 +1,15 @@
-import { prop } from '@typegoose/typegoose';
+import {Index, prop } from '@typegoose/typegoose';
 
 /**
  * 闪调客户
  */
+@Index({ userName: 1, mobile: 1 }, { unique: true }) // compound index
 export class User {
     /**
      * 公司
      */
     @prop()
     public company?: string;
-
 
     /**
      * userName
@@ -34,6 +34,12 @@ export class User {
      */
     @prop({ type: () => String})
     public mobile?: string;
+
+    /**
+     * pwd
+     */
+    @prop({ type: () => String, default: '888888'})
+    public pwd?: string;
 
     /**
      * 创建时间
