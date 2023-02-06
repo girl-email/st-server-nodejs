@@ -83,4 +83,20 @@ export class UserService {
     getUserList() {
         return this.UserModel.find().exec()
     }
+
+    /**
+     * 账号登陆
+     * @param body
+     */
+    async loginAccount(body) {
+        const where = {
+            mobile: body.mobile,
+            pwd: body.pwd
+        }
+        const user = await this.UserModel.where(where).findOne().exec();
+        if(!user) {
+            return null
+        }
+        return  user
+    }
 }
