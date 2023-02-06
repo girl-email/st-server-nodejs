@@ -68,7 +68,6 @@ export class ClientController {
      */
     @OnWSDisConnection()
     async disConnection(data = {cmd: '', data: {}}) {
-        console.log('OnWSDisConnection', this.ctx.id)
         ClientUser.delUser(this.ctx.id)
     }
 
@@ -79,7 +78,6 @@ export class ClientController {
     @OnWSMessage('data')
     @WSEmit('data')
     async gotMessage(data = {cmd: '', data: {}}) {
-        console.log('on data got', this.ctx.id, data);
         const hasUser = ClientUser.hasUser(this.ctx.id);
 
         if (!hasUser && data.cmd != 'login') {
@@ -103,7 +101,7 @@ export class ClientController {
     }
 
     /**
-     * 断开连接
+     * 服务端主动断开连接
      * @param theSocketId socketId
      * @private
      */
@@ -119,14 +117,13 @@ export class ClientController {
     }
 
     /**
-     * 处理console.log
+     * 处理log
      * @param data
      * @private
      */
     private async dealLog(data) {
         const serverUser = ClientUser.hasUser(this.ctx.id);
         if (!serverUser) {
-            console.log('用户不存在')
             // 断开连接
             return this.disConnect(this.ctx.id)
         }
