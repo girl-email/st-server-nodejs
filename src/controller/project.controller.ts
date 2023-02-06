@@ -1,4 +1,4 @@
-import {Inject, Controller, Get, Del, Body, Param} from '@midwayjs/decorator';
+import {Inject, Controller, Get, Post, Del, Body, Param} from '@midwayjs/decorator';
 import {Context} from '@midwayjs/koa';
 import {UserService} from '../service/user.service';
 import {ProjectService} from '../service/project.service';
@@ -50,10 +50,20 @@ export class ProjectController extends BaseController {
     /**
      * 增加项目
      */
-    @Put('/')
+    @Post('/')
     async addProject(@Body() param: AddProjectDTO) {
         const userId = this.ctx.user._id
         const result = await this.projectService.createProject({...param, userId});
+        return this.success(result)
+    }
+
+    /**
+     * 编辑项目
+     */
+    @Put('/:id')
+    async editProject(@Param('id') id, @Body() body: AddProjectDTO) {
+        const userId = this.ctx.user._id
+        const result = await this.projectService.updateProject({...body, userId, id});
         return this.success(result)
     }
 }

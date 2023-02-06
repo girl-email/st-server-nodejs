@@ -53,6 +53,17 @@ export class ProjectService {
         }
     }
 
+    /**
+     * 编辑项目
+     */
+    async updateProject(param: any) {
+        const result = await this.ProjectModel.update({
+            projectName: param.projectName,
+            projectDesc: param.projectDesc,
+        }).where({_id: param.id}).exec();
+
+        return result
+    }
 
     /**
      * 删除项目
