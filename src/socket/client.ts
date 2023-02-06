@@ -12,6 +12,7 @@ import ClientUser from './serverUser';
 import {ConsoleService} from '../service/console.service';
 import {AKService} from '../service/ak.service';
 import {OnWSDisConnection} from "@midwayjs/core";
+import {ProjectService} from "../service/project.service";
 
 /**
  * 客户端连接websocket
@@ -30,6 +31,9 @@ export class ClientController {
 
     @Inject()
     consoleService: ConsoleService;
+
+    @Inject()
+    projectService: ProjectService;
 
     @Inject()
     akService: AKService;
@@ -158,7 +162,7 @@ export class ClientController {
     }) {
         const  { appKey } = data;
 
-        const appKeyInfo = await this.akService.findOne({appKey});
+        const appKeyInfo = await this.projectService.findOne({appKey});
         if (!appKeyInfo) {
             this.ctx.emit('data', {
                 cmd: 'notFound',
