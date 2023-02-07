@@ -97,7 +97,7 @@ export class UserController extends BaseController {
 
         this.ctx.cookies.set('st_user', JSON.stringify(user), {
             path: '/', // 写cookie所在的路径
-            maxAge: 10 * 60 * 1000, // cookie有效时长
+            maxAge: 12 * 60 * 60 * 1000, // cookie有效时长
             // expires: new Date('2017-02-15'), // cookie失效时间
             httpOnly: true, // 是否只用于http请求中获取
             overwrite: false, // 是否允许重写
