@@ -58,7 +58,7 @@ export class UserController extends BaseController {
     async loginAccount(@Body() body) {
         const user = await this.userService.loginAccount(body);
         if (!user) {
-            return this.fail([], '账号或密码错误')
+            return this.fail(0, '账号或密码错误')
         }
         this.ctx.cookies.set('st_user', JSON.stringify(user), {
             path: '/', // 写cookie所在的路径

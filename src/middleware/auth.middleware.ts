@@ -19,7 +19,7 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
             })
 
             if (!data) {
-                return {success: false, message: '未登陆'};
+                return {code: 401, success: false,  message: '未登陆'};
             }
 
             ctx.user = JSON.parse(data)

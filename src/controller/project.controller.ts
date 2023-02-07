@@ -42,7 +42,7 @@ export class ProjectController extends BaseController {
     async userInfo(@Param('id') id) {
         const result = await this.projectService.deleteProject(id);
         if (!result.deletedCount) {
-            return this.fail([], '该项目不存在')
+            return this.fail(0, '该项目不存在')
         }
         return this.success(result, '操作成功')
     }

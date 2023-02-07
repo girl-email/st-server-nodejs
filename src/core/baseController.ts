@@ -12,18 +12,20 @@ export default class BaseController {
        return {
            success: true,
            data,
-           message
+           message,
+           code: 1
        }
     }
 
     /**
      *
      */
-    fail(data={}, message = '') {
+    fail(code=0, message = '') {
         return {
             success: false,
-            data,
-            message
+            data: {},
+            message,
+            code,
         }
     }
 }
