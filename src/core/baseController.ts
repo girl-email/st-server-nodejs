@@ -6,26 +6,28 @@ export default class BaseController {
     ctx: Context;
 
     /**
-     *
+     * 成功的返回
      */
     success(data={}, message = '') {
        return {
+           code: 1,
            success: true,
            data,
            message,
-           code: 1
+           timeStamp: new Date().getTime()
        }
     }
 
     /**
-     *
+     * 失败的返回
      */
     fail(code=0, message = '') {
         return {
+            code,
             success: false,
             data: {},
             message,
-            code,
+            timeStamp: new Date().getTime()
         }
     }
 }

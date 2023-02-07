@@ -36,7 +36,7 @@ export class UserController extends BaseController {
         const data = this.ctx.cookies.get('st_user', {
             encrypt: true
         })
-        return {success: true, message: 'OK', data: JSON.parse(data)};
+        return {success: true, message: 'OK', code: 1, data: JSON.parse(data)};
     }
 
     /**
