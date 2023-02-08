@@ -49,6 +49,14 @@ export class UserController extends BaseController {
         this.ctx.redirect(url)
     }
 
+    /**
+     * 登出
+     */
+    @Post('/logOut')
+    async logOut() {
+        this.ctx.cookies.set('st_user', null);
+        return this.success()
+    }
 
     /**
      * 用户登陆
