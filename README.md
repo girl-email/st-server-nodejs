@@ -9,9 +9,8 @@
 - 实时连接用户, 查看报错、帮用户清缓存等
 - 前端错误 录屏 rrweb
 
-![img.png](img.png)
-
 ## 闪调业务流程图
+![img.png](img.png)
 
 ### Development
 
