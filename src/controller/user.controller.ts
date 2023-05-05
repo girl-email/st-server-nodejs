@@ -90,7 +90,7 @@ export class UserController extends BaseController {
         if (!result.accessToken) {
             return this.fail()
         }
-        const userInfo = await this.userService.getUserInfo(result.accessToken)
+        const userInfo: any = await this.userService.getUserInfo(result.accessToken)
         let user: any = await this.userService.findUser({openId: userInfo.openId})
         if (!user) {
             user = {
