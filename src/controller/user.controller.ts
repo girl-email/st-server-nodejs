@@ -86,7 +86,7 @@ export class UserController extends BaseController {
      */
     @Get('/auth')
     async auth(@Query('authCode') authCode) {
-        const result = await this.userService.userAccessToken(authCode);
+        const result: any = await this.userService.userAccessToken(authCode);
         if (!result.accessToken) {
             return this.fail()
         }
