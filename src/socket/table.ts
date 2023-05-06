@@ -81,17 +81,17 @@ export class ClientController {
 
     @Init()
     init() {
-        setInterval(() => {
-            this.ctx.broadcast.emit("data", {
-                cmd: 'tableData',
-                data: tableData
-            });
-            const count = this.app.engine.clientsCount;      // 获取所有的连接数
-            this.ctx.broadcast.emit("data", {
-                cmd: 'userCount',
-                data: count
-            });
-        }, 200000)
+        // setInterval(() => {
+        //     this.ctx.broadcast.emit("data", {
+        //         cmd: 'tableData',
+        //         data: tableData
+        //     });
+        //     const count = this.app.engine.clientsCount;      // 获取所有的连接数
+        //     this.ctx.broadcast.emit("data", {
+        //         cmd: 'userCount',
+        //         data: count
+        //     });
+        // }, 200000)
     }
 
     @OnWSConnection()
