@@ -494,7 +494,7 @@ export class JDService {
                 }
             ]
         }
-        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e8856c5-08c4-4b68-9ee3-e71f515d133b';
+        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e1ae178-a3cb-4ea9-b3f2-29d650c14731';
 
         const options = {
             method: 'POST',
@@ -588,7 +588,7 @@ export class JDService {
                 }
             ]
         }
-        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e8856c5-08c4-4b68-9ee3-e71f515d133b';
+        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e1ae178-a3cb-4ea9-b3f2-29d650c14731';
 
         const options = {
             method: 'POST',
