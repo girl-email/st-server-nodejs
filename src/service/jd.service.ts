@@ -11,7 +11,7 @@ import fetch from 'node-fetch'
 import * as koa from "@midwayjs/koa";
 const fs = require('fs')
 import { MidwayLoggerService } from '@midwayjs/core';
-import dayjs from "dayjs"
+const dayjs = require('dayjs')
 
 @Provide()
 export class JDService {
