@@ -8,7 +8,7 @@ import Youdao from '@opentranslate/youdao'
 // @ts-ignore
 const Youdao = require('youdao-fanyi');
 import fetch from 'node-fetch'
-import * as koa from "_@midwayjs_koa@3.13.8@@midwayjs/koa";
+import * as koa from "@midwayjs/koa";
 const fs = require('fs')
 import { MidwayLoggerService } from '@midwayjs/core';
 
@@ -416,9 +416,6 @@ export class JDService {
         }
         return  false
     }
-
-
-
 
     async sendFeiShu(info1, type) {
         let card = {
