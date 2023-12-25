@@ -11,6 +11,7 @@ import fetch from 'node-fetch'
 import * as koa from "@midwayjs/koa";
 const fs = require('fs')
 import { MidwayLoggerService } from '@midwayjs/core';
+import dayjs from "dayjs"
 
 @Provide()
 export class JDService {
@@ -418,6 +419,8 @@ export class JDService {
     }
 
     async sendFeiShu(info1, type) {
+        const now = dayjs().format('YYYY-MM-DD hh:mm:ss') // '25/01/2019'
+
         let card = {
             "header": {
                 "title": {
@@ -484,7 +487,7 @@ export class JDService {
                             "is_short": false,
                             "text": {
                                 "tag": "lark_md",
-                                "content": `${type?"是": '否'}`
+                                "content": `${type?"是": '否'} - ${now}`
                             }
                         }
                     ]
@@ -510,6 +513,8 @@ export class JDService {
     }
 
     async jumpSendFeiShu(info1, type) {
+        const now = dayjs().format('YYYY-MM-DD hh:mm:ss') // '25/01/2019'
+
         let card = {
             "header": {
                 "title": {
@@ -576,7 +581,7 @@ export class JDService {
                             "is_short": false,
                             "text": {
                                 "tag": "lark_md",
-                                "content": `${type?"是": '否'}`
+                                "content": `${type?"是": '否'} - ${now}`
                             }
                         }
                     ]
