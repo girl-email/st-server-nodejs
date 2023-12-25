@@ -8,25 +8,30 @@ import {NotFoundFilter} from './filter/notfound.filter';
 import {ReportMiddleware} from './middleware/report.middleware';
 import {AuthMiddleware} from './middleware/auth.middleware';
 // import { HttpProxyMiddleware } from './middleware/proxy.middleware';
-// import * as proxy from '@midwayjs/http-proxy';
-import * as socketio from '@midwayjs/socketio';
-import * as redis from '@midwayjs/redis';
-import * as typegoose from '@midwayjs/typegoose';
-import * as security from '@midwayjs/security';
+import * as proxy from '@midwayjs/http-proxy';
+// import * as socketio from '@midwayjs/socketio';
+// import * as redis from '@midwayjs/redis';
+// import * as typegoose from '@midwayjs/typegoose';
+// import * as security from '@midwayjs/security';
+// import cors from '@koa/cors';
+import * as crossDomain from '@midwayjs/cross-domain';
+
+import {JDMainService}  from './service/jd.service'
 
 @Configuration({
     imports: [
+        crossDomain,
         koa,
         validate,
         {
             component: info,
             enabledEnvironment: ['local'],
         },
-        socketio,
-        redis,
-        typegoose,
-        security
-        // proxy
+        // socketio,
+        // redis,
+        // typegoose,
+        // security,
+        proxy,
     ],
     importConfigs: [join(__dirname, './config')],
 })
@@ -40,5 +45,7 @@ export class ContainerLifeCycle {
         // this.app.useMiddleware([ReportMiddleware]);
         // add filter
         this.app.useFilter([NotFoundFilter, DefaultErrorFilter]);
+        // new JDService()
+        new JDMainService()
     }
 }

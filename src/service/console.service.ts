@@ -15,7 +15,7 @@ export class ConsoleService {
     /**
      * 添加控制台信息
      */
-    async addConsole(data): Promise<string> {
+    async addConsole(data): Promise<any> {
         const {_id: id} = await this.consoleModel.create({
             ...data,
             createTime: new Date()

@@ -14,15 +14,15 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
     }
     resolve() {
         return async (ctx: Context, next: NextFunction) => {
-            const data = ctx.cookies.get('st_user', {
-                encrypt: true
-            })
+            // const data = ctx.cookies.get('st_user', {
+            //     encrypt: true
+            // })
 
-            if (!data) {
-                return {code: 401, success: false,  message: '未登陆'};
-            }
-
-            ctx.user = JSON.parse(data)
+            // if (!data) {
+            //     return {code: 401, success: false,  message: '未登陆'};
+            // }
+            //
+            // ctx.user = JSON.parse(data)
             // 返回给上一个中间件的结果
             return await next();
         };

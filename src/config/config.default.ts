@@ -12,8 +12,8 @@ export default {
     },
 
     httpProxy: {
-        match: /\/api\//,
-        host: 'http://daily-performance.sunmeta.top',
+        match: /\/popRecording\//,
+        host: 'https://shop-hk.jd.com',
     },
 
     redis: {
@@ -35,7 +35,7 @@ export default {
     mongoose: {
         dataSource: {
             default: {
-                uri: 'mongodb://127.0.0.1:27017/st',
+                uri: 'mongodb+srv://1751170889:199901zb@cluster0.ylehkz8.mongodb.net/?retryWrites=true&w=majority',
                 options: {
                     useNewUrlParser: true,
                     useUnifiedTopology: true,
@@ -89,5 +89,10 @@ export default {
             enable: true,
             value: '1; mode=block',
         },
+    },
+
+    cors: {
+        credentials: true,
+        // origin: 'https://porder.shop.jd.com',
     },
 } as MidwayConfig;
