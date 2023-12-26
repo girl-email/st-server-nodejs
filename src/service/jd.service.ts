@@ -160,7 +160,7 @@ export class JDService {
         }
         setTimeout(() => {
             this.getSendOrderList()
-        },15000)
+        },20000)
         return  {
             res,
         }
