@@ -53,7 +53,7 @@ export class JDService {
         // const customLogger = this.loggerService.getLogger('coreLogger');
         // this.logger = customLogger
         this.logger.info('初始化');
-        // this.getStopOrderList()
+        this.getStopOrderList()
         // setInterval(() => {
         //     this.logger.info('开始新的一轮暂停订单检查');
         //     this.getStopOrderList()
@@ -62,7 +62,7 @@ export class JDService {
         // setInterval(() => {
         //     this.getSendOrderList()
         // }, this.CHECK_TIME * 1.5)
-        this.getBeiAnList()
+        // this.getBeiAnList()
     }
 
 
