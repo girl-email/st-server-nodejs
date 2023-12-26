@@ -121,7 +121,7 @@ export class JDService {
                                 ...info,
                                 skuName: order.skuName
                             },
-                            0
+                            1
                         )
 
                     }
