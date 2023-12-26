@@ -53,7 +53,7 @@ export class JDService {
         // const customLogger = this.loggerService.getLogger('coreLogger');
         // this.logger = customLogger
         this.logger.info('初始化');
-        this.getStopOrderList()
+        // this.getStopOrderList()
         // setInterval(() => {
         //     this.logger.info('开始新的一轮暂停订单检查');
         //     this.getStopOrderList()
@@ -62,7 +62,7 @@ export class JDService {
         // setInterval(() => {
         //     this.getSendOrderList()
         // }, this.CHECK_TIME * 1.5)
-        // this.getBeiAnList()
+        this.getBeiAnList()
     }
 
 
@@ -116,7 +116,14 @@ export class JDService {
                     info.paymentConfirmTime = item.paymentConfirmTime
                     const success = await this.updateBeiAn(info, 1)
                     if (success) {
-                        this.jumpSendFeiShu(info, 1)
+                        this.jumpSendFeiShu(
+                            {
+                                ...info,
+                                skuName: order.skuName
+                            },
+                            0
+                        )
+
                     }
                 }
             }
@@ -141,7 +148,12 @@ export class JDService {
                 if (info.type == 1) {
                     const success = await this.updateBeiAn(info, 0);
                     if (success) {
-                        this.sendFeiShu(info, 0)
+                        this.sendFeiShu(
+                            {
+                                ...info,
+                                skuName: order.skuName
+                            }
+                            , 0)
                     }
                 }
             }
@@ -154,8 +166,8 @@ export class JDService {
         }
     }
     // 获取备列表
-    async getBeiAnList(page = 1) {
-        const result = await fetch("https://shop-hk.jd.com/popRecording/recorded/recordedManage.do?goodsName=&skuId=&upc=&customId=&fromCreated=&toCreated=&ccProvider=&customModel=&sellerRecord=&page=1", {
+    async getBeiAnList(page = 2) {
+        const result = await fetch(`https://shop-hk.jd.com/popRecording/recorded/recordedManage.do?goodsName=&skuId=&upc=&customId=&fromCreated=&toCreated=&ccProvider=&customModel=&sellerRecord=&page=${page}`, {
             "headers": {
                 "accept": "*/*",
                 "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
@@ -178,14 +190,18 @@ export class JDService {
         const res = result.result.result;
         const list = res.list;
         this.beiAnList.push(...list)
-        if (res.page < res.totalPage) {
+        for (const item of list) {
+            const info = await this.queryOneBeiAnInfo(item.skuId)
+            if (info.type == 0) {
+                this.updateBeiAn(info, 1);
+            }
+        }
+        if (page < res.totalPage) {
             setTimeout(() => {
                 this.getBeiAnList(res.page + 1)
-            }, 5000)
+            }, 2000)
         } else {
-            setTimeout(() => {
-                this.getBeiAnList(1)
-            }, 20000)
+            console.log('执行完成')
         }
 
 
@@ -196,7 +212,7 @@ export class JDService {
         //         console.log('type 1')
         //     }
         // })
-        console.log(res,list, '--');
+        // console.log(res,list, '--');
     }
     /**
      *
@@ -464,7 +480,8 @@ export class JDService {
                             "is_short": false,
                             "text": {
                                 "tag": "lark_md",
-                                "content": `商品名称${info1.goodsName}; 订单号: ${info1.orderId}; 付款时间: ${info1.paymentConfirmTime};  skuId: ${info1.skuId}`
+                                "content": `商品sku名称${info1.skuName} 订单号: ${info1.orderId};
+                                 付款时间: ${info1.paymentConfirmTime}; 主备案商品名称${info1.goodsName}; 主备案skuId: ${info1.skuId}`
                             }
                         }
                     ]
@@ -558,7 +575,8 @@ export class JDService {
                             "is_short": false,
                             "text": {
                                 "tag": "lark_md",
-                                "content": `商品名称${info1.goodsName}; 订单号: ${info1.orderId}; 付款时间: ${info1.paymentConfirmTime};  skuId: ${info1.skuId}`
+                                "content": `商品sku名称${info1.skuName} 订单号: ${info1.orderId};
+                                 付款时间: ${info1.paymentConfirmTime}; 主备案商品名称${info1.goodsName}; 主备案skuId: ${info1.skuId}`
                             }
                         }
                     ]
