@@ -54,8 +54,8 @@ export class JDService {
         // const customLogger = this.loggerService.getLogger('coreLogger');
         // this.logger = customLogger
         this.logger.info('初始化');
-        // this.getStopOrderList()
-        this.getBeiAnList()
+        this.getStopOrderList()
+        // this.getBeiAnList()
 
         // setInterval(() => {
         //     this.logger.info('开始新的一轮暂停订单检查');
