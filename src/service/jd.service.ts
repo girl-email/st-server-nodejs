@@ -160,7 +160,7 @@ export class JDService {
         }
         setTimeout(() => {
             this.getSendOrderList()
-        },20000)
+        },10000)
         return  {
             res,
         }
@@ -293,7 +293,7 @@ export class JDService {
 
         setTimeout(() => {
             this.getStopOrderList()
-        },20000)
+        },15000)
     }
     // 更新备案
     async updateBeiAn(info1, type = 1) {
