@@ -36,11 +36,17 @@ export class HomeController {
   async save(@Body() body) {
       const stringData = fs.readFileSync('data.json', 'utf-8');
       const data = JSON.parse(stringData);
-
-      fs.writeFileSync('data.json', JSON.stringify({
-          ...data,
-          [1]: body.cookies
-      }))
-      return body
+      if (body.thread) {
+          fs.writeFileSync('data.json', JSON.stringify({
+              ...data,
+              [body.thread]: body.cookies
+          }))
+          return body
+      } else {
+          const len = Object.keys(data).length+ 1
+          return  {
+              thread: len
+          }
+      }
   }
 }

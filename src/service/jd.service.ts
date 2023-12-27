@@ -223,7 +223,7 @@ export class JDService {
             for (const item of list) {
                 const info = await this.queryOneBeiAnInfo(item.skuId)
                 if (info && info.type == 1) {
-                    this.updateBeiAn(info, 0);
+                    await this.updateBeiAn(info, 0);
                 }
             }
             if (page < res.totalPage) {
@@ -277,6 +277,7 @@ export class JDService {
             }
             return  info
         } catch (e) {
+            console.log(e, 'error info')
             return  null
         }
     }
@@ -470,6 +471,44 @@ export class JDService {
             }
         }
         return  false
+    }
+
+
+   async checkLogin() {
+       try {
+           const res = await fetch("https://porder.shop.jd.com/order/orderlist", {
+               "headers": {
+                   "accept": "application/json, text/plain, */*",
+                   "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                   "content-type": "application/json;charset=UTF-8",
+                   "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+                   "sec-ch-ua-mobile": "?0",
+                   "sec-ch-ua-platform": "\"macOS\"",
+                   "sec-fetch-dest": "empty",
+                   "sec-fetch-mode": "cors",
+                   "sec-fetch-site": "same-origin",
+                   "cookie": "shshshfpa=44e010ae-b994-5292-d604-85a49c6a806d-1611905242; shshshfpx=44e010ae-b994-5292-d604-85a49c6a806d-1611905242; __jdu=1700109613209731139267; __jdv=76161171|direct|-|none|-|1703342303715; areaId=15; ipLoc-djd=15-1213-0-0; PCSYCityID=CN_330000_330100_0; _tp=WWkrE5q1uaY3bnuvPN7mC0Jy7Qj98SqryFRfDnmAGXBfj3EZkqYEdCCNPQpAbAri; pinId=Mk_A6Nbv7MenkDneLmJDcA; _pst=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; unick=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; user-key=8d21ce0f-8695-4c7e-835e-a2fc50c50830; corpBehavior=1; 3AB9D23F7A4B3CSS=jdd03OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLUAAAAMMUOJ4NGQAAAAADSDP22VJIM6GNMX; cn=1; smb_track=E36463B1BA744C75803892A14AFFF0A9; language=zh_CN; __USE_NEW_PAGEFRAME__=false; __USE_NEW_PAGEFRAME_VERSION__=v9; chat.jd.com=20170206; TrackID=1eKDqnXkB0cCNjshjVGs7kkRuDN5_Qha45E8IfuM0IyGXJFm6xN_gwllHHQ4ocw_w; ceshi3.com=000; flash=2_3Vf3TU1oOHS1E3iLb5mioPPwrQ-L6JvcRzupMoYFEjuZidy3aoJAiw6EkDNkfqvzrWbw1ymxXXb9Xid3ms_lM599f059_YoIpxgLpMYfYkp*; thor=6901B38FCABE2222F893FE4DA6A41AD28B2FF5A6B6F54A76F64CA788BC1404FA432D8014F1CA9DE928F379133D2969B553703BE185EF1FD6649B263A5EA1B9472C6558C7D6FE5CD726F9BF383E4E4570D054429AC8A045F0B45922B76DF266888E87D583C7DF1F76D301771EF3F104D797CDE992C8421711685C97D73408EC5147BF2E12DEF84BD9DEDF129C6C483F90; _vender_=TNK3O6PALVQGGMI642LJKJZPNN56IZEONGC7GL4VVDUXDFCCPPZQLPMTKJILMAPLCVF5BI7BM6KSTB3TNH3PMYY5YAALDGQXK7G2A7QXSDNOYW6CAGCLDWEQCPKGC3KUGVRB646PDVLYUQI3BDJ566XYIWJK3BINEVNTZU4XPHS7MGPM3IRXP3KQCYUEFTMPHRWL6CUN7T6NJ73NKFWGRSQYITLV2HHO3WE5JGLOWXRT3TAPTQSGGNICGAJHKSRTNTSC54R6Q4CXGZB2XWZYYTWTKUI23OXFVXEK3PE6BHKXEXJ5ZBTE7AQ4DRO7SJ75N23E6IGHEDQCT72I5345J2I36SSU434I7P6CY7EB2AEQ7LYOCV7OPGUYC4YKELPF3MGRB5OZSQZPV5DBDCN2OVVT3WHFGAZIBXIZMBNTMAJCDBGXFURYZVWQPSCD3VDHMYA4TRS3V45TKL5WWCWLZJGL3O3E5ZV4ATZXW4SB4DJLYX2W5LCD463NVMESRXHGU7GPWC3OZ52TBSZVWNCCHLV74FF3X42RWEHORBFKVKO32KKWLMWICL5FHXUEAUU7DLZ7R7TMBK7WVVS3WBDRRYD2QA22CEXPI3DTY7JDOMGER4JRG54GG4GSVXV6ABW2A3EP2IIDQ3SSPF25JGU5EUCCQ4J6ZPZ4Z664WWOW5OSLBNGLDSIVWKEXWCXDLZI5OWDAMBXZDZNIDXXBMRK4DRDPSI; b-sec=H7A3ZVYOXG5O6CIG7HQL4J7UIHCOAOXSWXVJGQ2SINZCR5RT55BV5YF3H32UFC4S; mba_muid=1700109613209731139267; universityLanguage=zh_CN; xue_userTypeCookieName50b60fba08fddfff319d0b5acc9d6eee=\"{\\\"1\\\":\\\"POP\\\"}\"; xue_userTypePageCookieName50b60fba08fddfff319d0b5acc9d6eee=1; qid_uid=63fbf91a-2193-4141-8127-0b5a9a4da60e; qid_fs=1703595716678; qid_ls=1703595716678; qid_ts=1703595716684; qid_vis=1; qid_sid=63fbf91a-2193-4141-8127-0b5a9a4da60e-1; qid_seq=3; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC675CBWSP3REU42YTAQTNJUDXURTCNE6YVKRXISUFXTDU7V3U7QL2S3GKYL2ZCNGXSSG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD46QKR5DC3ZOXYJJSMQ7LPFV7Q42XNFW3B6USLKSP4DOKX736ZCQKMJCPUFAFUHXCAGBCJZTXPG55TUBDTGHQHRURVFOSH3SMBJJZ724NH6RPUBSC6X23EQXZ6XDSAY7EABH3APEXJ2C7MDIZP2K6O4UWVEXBLKE677BPFI2A; _vender_new_=GI63BGTJFDBQ5VFYRAGXDIUTOUGBH4IELSA4HBAE7MB4S5HIL5QMHN2LMW7LKWD43YCKHJGXPJWTPRAEQ2QTFLJHKJUFHCXGGYIHCD7WSWY4PLU54NT3HGWB4MCDSKE4VJSCWBCJJ3C6Z2VI46TWP7ZJBWNTMPWIQ77NXK4VVKW6ABLW3LCTHZEYXQSC5L6SULQYZLAOLYQIKX2KPA4NEI5RHY4F2FAXI5CPTHP6BXFL757MRIFGERH2CQC2D3RAAFDYIVNI7B7NTLXWX5NEUT7IONYJQA2GVEUHKGHLAXO2JD6UI7C57LRQ4MAILLWECXYYZ2YLJ5HVL6HMAVKWPNRUQV7VQ4TJYKV2GUTU42R6YB2W5VZ3XQXEWKPWY7U37DONKSVFDJCTM5HGUPWAOVXNOO54FZFST5WH5G3YCCF5H6RHZCCNDAPJ5WDJVY2XHWD7VVNICVT7PTKMSBW33L3BBSATV65XAXG72Z3QJ45MXA6IP2XQELXE7F47VC57UTM3EBWFRS7SWZCFQ5TPOT46JIQ6PNSYVA4453VSW4EAUWK6FRG3WAOQPSHG6BYFS7IG5ZCONS7EQAHSIUWPVDMBEDVBVCXW7ZSOG2U73QD4GGSJJ64QEOMY6A6GSGUVTIRL5UKNZLFIKJJT4PULCS3CSE; shshshfpb=AAsaEOaaMEpILfXnDP1RQdOco4vsSWBcDNClSTgAAAAA; _BELONG_CLIENT_=WPSC4XJXWK5USS4JNZY2X7VRLR5MCBKRSVHEXABGTHDGISIQK5YOLZUXYE7IOIM7MOKO74H6CRN6WHAAR4TMDV3XZWMXZRCRT5XRNE3V356BTOB2Y7LPK66VWQK6HPTGWVXIDXDCPVE3W5WMHAIO6AT2LX2XXVNUCXR34ZWFK6HY45CORGIKOSYDYZBF27WOKTUX6BS4FZMIJWNUX6CB4JAA25ZLF7ZEKYOO4QV5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BMTUJZACIBHXQFAVLRF76VQY5PNJGGJNBEZHSFYYJA3YORRT7FB5AHCOIFQKF3W5RWNUX6CB4JAA26JNMO7AYWNUPZF5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BWZDKMOJ5BS6II53ERY6ALV3ZWPF42L4CPUHEGPYIII35KDC4FCNVCORCXFD6IVNLBEDPB2GGP4UHWNRUDOQBDIW7RZJXBA2WV5ANZOTEGUCDWYRVQS2YUTIZNZ276PRYG4N56V6YTII7MBKBC7LYHO7C555HTSBXGNRM3E466AYN67DHWVM5HQFJ4NFDO5BSO5SF7ZNRNQMVBPEQMCXU26RC4Q; __jda=191429163.1700109613209731139267.1700109613.1703581530.1703595081.28; __jdc=191429163; __jdb=191429163.42.1700109613209731139267|28.1703595081; 3AB9D23F7A4B3C9B=OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLU",
+                   "Referer": "https://porder.shop.jd.com/order/orderlist/suspend?t=1703595540199",
+                   "Referrer-Policy": "strict-origin-when-cross-origin"
+               },
+               "body": "{\"current\":1,\"pageSize\":10,\"sortName\":\"desc\",\"orderId\":\"\",\"skuName\":\"\",\"orderCreateDateRange\":[],\"orderCompleteDateRange\":[],\"receiverName\":\"\",\"receiverTel\":\"\",\"userPin\":\"\",\"skuId\":\"\",\"logiNo\":\"\",\"paymentType\":\"\",\"orderType\":\"\",\"orderSource\":\"\",\"deliveryType\":\"\",\"storeId\":\"\",\"huoHao\":\"\",\"orderStatusArray\":[],\"o2oStoreIds\":null,\"provinceIds\":[],\"orderTag\":null,\"selectedTabName\":\"suspend\"}",
+               "method": "POST"
+           }).then(d => {
+               try {
+                   return d.json()
+               } catch (e) {
+                   return d.text()
+               }
+           });
+           if (Array.isArray(res.orderList)) {
+               return true
+           } else {
+               return false
+           }
+       } catch (e) {
+           console.log(e, 'error')
+           return false
+       }
     }
 
     async sendFeiShu(info1, type) {
@@ -669,8 +708,12 @@ export class JDMainService {
         this.init()
         setInterval(() => {
             this.init()
-        }, 30000)
+        }, 10000)
     }
+
+    // _threadPool = {
+    //     1
+    // }
 
     _hash = {}
 
@@ -680,13 +723,23 @@ export class JDMainService {
     init() {
         const stringData = fs.readFileSync('data.json', 'utf-8');
         const data = JSON.parse(stringData);
-        Object.keys(data).forEach((item: string) => {
+        Object.keys(data).forEach(async (item: string) => {
             if (!this._hash[item]) {
-                this._hash[item] = new JDService(data[item])
-                this._hash[item].JDCookies = data[item]
+                if (data[item]) {
+                    this._hash[item] = new JDService(data[item])
+                    this._hash[item].JDCookies = data[item]
+                }
             } else {
                 this._hash[item].JDCookies = data[item]
                 console.log('更新jd cookies成功')
+
+                const isLogin = await this._hash[item].checkLogin();
+                if(!isLogin) {
+                    console.log(`线程${item}, 访问京东接口异常`)
+                }
+                if(!this._hash[item].JDCookies) {
+                    delete this._hash[item]
+                }
             }
         })
     }
