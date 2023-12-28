@@ -165,7 +165,7 @@ export class JDService {
                 const orderItems = item.orderItems;
                 // "orderStatus": -4,
                 //     isPhoneOrder: false
-                if (item.orderStatus === -4 || !item.isPhoneOrder) {
+                if (item.orderStatus === -4) {
                     continue;
                 }
                 for await (const order of orderItems) {
