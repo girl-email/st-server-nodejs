@@ -125,6 +125,10 @@ export class JDService {
                     const orderItems = item.orderItems;
                     for (const order of orderItems) {
                         const skuId = order.skuId
+                        const hasOtherOrder = await this.stopListHasSkuOtherOrder(skuId, item.orderId)
+                        if (hasOtherOrder) {
+                            continue;
+                        }
                         const info = await this.queryOneBeiAnInfo(skuId)
                         if (info) {
                             info.orderId = item.orderId
