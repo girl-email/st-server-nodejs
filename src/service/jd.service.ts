@@ -33,6 +33,9 @@ export class JDService {
     // logger: ILogger;
     thread = null
 
+
+    private errorNotifyUrl = 'https://open.feishu.cn/open-apis/bot/v2/hook/79e4aded-fdf2-411c-ac25-0156e975a072'
+
     logger = {
         info: console.log
     }
@@ -760,7 +763,7 @@ export class JDService {
             "header": {
                 "title": {
                     "tag": "plain_text",
-                    "content": `订单超过十分钟未跳出暂停改为是通知`
+                    "content": `订单超过十二分钟未跳出暂停改为是通知`
                 },
                 "template": "red"
             },
@@ -830,7 +833,7 @@ export class JDService {
                 }
             ]
         }
-        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e1ae178-a3cb-4ea9-b3f2-29d650c14731';
+        const webhook = this.errorNotifyUrl;
 
         const options = {
             method: 'POST',
@@ -901,7 +904,7 @@ export class JDService {
                 }
             ]
         }
-        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e1ae178-a3cb-4ea9-b3f2-29d650c14731';
+        const webhook = this.errorNotifyUrl
 
         const options = {
             method: 'POST',
