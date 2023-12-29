@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
 import {App, Inject} from '@midwayjs/decorator';
 import { Provide} from '@midwayjs/core';
 // import { ILogger } from '@midwayjs/logger';
