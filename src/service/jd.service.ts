@@ -482,7 +482,7 @@ export class JDService {
     }
 
     stopListHasSkuOtherOrder(skuId, orderId) {
-        for (const item of this.stopList.filter(item => item.orderId === orderId)) {
+        for (const item of this.stopList.filter(item => item.orderId !== orderId)) {
             const orderItems = item.orderItems;
             const hasSku = orderItems.some(j => j.skuId == skuId || j.mainSkuId == skuId);
             if(hasSku) {
