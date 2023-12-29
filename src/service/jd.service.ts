@@ -182,8 +182,8 @@ export class JDService {
                     } else {
                         const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
                         // 超过十分钟
-                        if (diffTime >= 10) {
-                            this.logger.info('超过十分钟啦')
+                        if (diffTime >= 12) {
+                            this.logger.info(item.orderId, '超过十二分钟啦')
                             const hasOrder = await this.stopListHasSkuOtherOrder(skuId, item.orderId)
                             // 如果其他订单不包含此sku
                             if (!hasOrder) {
@@ -336,7 +336,7 @@ export class JDService {
 
             setTimeout(() => {
                 this.getStopOrderList()
-            },15000)
+            },10000)
         } catch (e) {
             setTimeout(() => {
                 this.getStopOrderList()
@@ -485,7 +485,8 @@ export class JDService {
         for (const item of this.stopList.filter(item => item.orderId !== orderId)) {
             const orderItems = item.orderItems;
             const hasSku = orderItems.some(j => j.skuId == skuId || j.mainSkuId == skuId);
-            if(hasSku) {
+            const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
+            if (diffTime <= 12 && hasSku) {
                 return true
             }
         }
