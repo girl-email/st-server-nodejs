@@ -69,7 +69,7 @@ export class JDService {
         // const customLogger = this.loggerService.getLogger('coreLogger');
         // this.logger = customLogger
         this.logger.info('初始化');
-        // this.getStopOrderList()
+        this.getStopOrderList()
         // this.getBeiAnList()
         // this.getShopInfo()
         // setInterval(() => {
