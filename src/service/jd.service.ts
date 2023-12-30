@@ -22,6 +22,10 @@ export class JDService {
         setTimeout(() => {
             this.init()
         },2000)
+
+        setInterval(() => {
+            this.getShopInfo()
+        }, 60000)
     }
     @Inject()
     loggerService: MidwayLoggerService;
@@ -32,6 +36,9 @@ export class JDService {
     // @Logger()
     // logger: ILogger;
     thread = null
+
+
+    shopInfo = {}
 
 
     private errorNotifyUrl = 'https://open.feishu.cn/open-apis/bot/v2/hook/79e4aded-fdf2-411c-ac25-0156e975a072'
@@ -62,9 +69,9 @@ export class JDService {
         // const customLogger = this.loggerService.getLogger('coreLogger');
         // this.logger = customLogger
         this.logger.info('初始化');
-        this.getStopOrderList()
+        // this.getStopOrderList()
         // this.getBeiAnList()
-
+        // this.getShopInfo()
         // setInterval(() => {
         //     this.logger.info('开始新的一轮暂停订单检查');
         //     this.getStopOrderList()
@@ -500,7 +507,6 @@ export class JDService {
         return  false
     }
 
-
     async getOrderRemark(orderIds) {
         const result = await fetch(`https://porder.shop.jd.com/order/global/getVenderRemarkMap?orderIds=${orderIds}`, {
             "headers": {
@@ -527,6 +533,38 @@ export class JDService {
         return result
     }
 
+    async getShopInfo() {
+        const result = await fetch("https://i.shop.jd.com/optional/topMenu/overview?callback=jsonpCB_1703864564162_0hr4lix2mzgt&appName=jdos_porder-shop&menuId=1500&systemId=1", {
+            "headers": {
+                "accept": "*/*",
+                "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                "cache-control": "no-cache",
+                "pragma": "no-cache",
+                "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "\"macOS\"",
+                "sec-fetch-dest": "script",
+                "sec-fetch-mode": "no-cors",
+                "sec-fetch-site": "same-site",
+                "cookie": this.JDCookies,
+                // "cookie": "__jdv=56585130|direct|-|none|-|1703600265575; pinId=Mk_A6Nbv7MenkDneLmJDcA; unick=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; _tp=WWkrE5q1uaY3bnuvPN7mC0Jy7Qj98SqryFRfDnmAGXBfj3EZkqYEdCCNPQpAbAri; _pst=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; __jdu=17036002655721718781778; 3AB9D23F7A4B3CSS=jdd03OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLUAAAAMMWCNULEAAAAAACOUKVNVUZZMDCUX; areaId=15; ipLoc-djd=15-1213-0-0; PCSYCityID=CN_330000_330100_0; language=zh_CN; smb_track=02DE91E68A90440681C0768B8C50A8BD; __USE_NEW_PAGEFRAME__=false; __USE_NEW_PAGEFRAME_VERSION__=v9; chat.jd.com=20170206; shshshfpb=AAiuCuLWMEpILfXnDP1RQdOco4vsSWBcDNClSUAAAAAA; QRCodeKEY=FC836460F1597075BD11887C4243E4A30E91A73D1DBCC75EEA63772BECCE94D89D2938D1818DA81A6C2501F503C01641; AESKEY=0EF530754B66CB9E; UIDKEY=102388463689062392; flash=2_IH1En_p4pwB7anzpN4g9YeEy6Cq8ndW6Gl4ZpRhSmLrJ3vp8VvF25G6kyptLLnI-5nsJ-ZlwdYkoPIncHUxs9ZmzBuYtJ21Mi-ReZGcdKmN*; TrackID=1tQ2ZaAoH6gQDGLIezMKIcWKp1ZonH3gP7yCOW311TyIqCWAL-VXhYZmVSowlStoC; thor=6901B38FCABE2222F893FE4DA6A41AD2EFBE1AE6D506095B2FAEDCEB50D6317CF4ED710E59A5BDC07B494EF3DEDA3AE77FF31FAE97C6939F67A9A90C4BB9533D6895B99957A61581CA0D1D092A6614CD5F6CE1A5E8216EFA2E7DC597CC1C9E9BDB25B69C9A9E8864B98C566DF2DFC030725042F0FEA51948BF9FA21D5D465EFDDC06968E1D3CA878812E3F9037676FEC; ceshi3.com=000; _vender_=TNK3O6PALVQGGMI642LJKJZPNN56IZEONGC7GL4VVDUXDFCCPPZQLPMTKJILMAPLXETACDXPW6K7OJOQKR2XAEWZEUALDGQXK7G2A7QXSDNOYW6CAGCPRLP5Z3NIZCHA4EL275ID7OHDWKJCG3IKWJEKBLKXNRBLHPI43M6V7YP2SC4RQRZXNIFA6PUCI7UIJYQMBTNIZIILXODG4AMBHU7KVXB7C3FVYYIDB6CNUJRIY3OXKRFOLJ5NJPZVGTXO3MGRB5OZSQZPUXK7OTV5QTIP7NLKLLY3WYJPC4VDZHQGTTOSIIB5LHCFEU46QULB2S23NQFGX3NFYRWZZ4RSVT5V5XCLCR6ORQNFC6Z6LN7AOMH5WXHCJZAENA6SMDSKCIYM3B25NWIYPAC4U3MBP2BDLJVVANWICDN6T6NZ5EU4TAACUTVVOVRLM6JTGYD7NX4IWYHATFWDNHVJJUNUDUHMVNYQT2FAZY4YIO2ZIMJX5UUINOJOE5UGJGNEXRP3LEVEOKPEKYZQTGIEMICOMRE5O6LV2SNJ2JIEFB6S7UW65Q4TE6WWMAOJYZN26OZVDWM5N6CVR2ER6YG3W4SVEC3KWSVM7MJTUZNQVYDSJGIVLO3MU25PV33A5NUN7KDRRNKGCEK4V6MSOXETOVWA664XIMTDRCC4ZMMDMWXRXDHQ7WUHLISPYU7RSWJYVDGDHNBIGEPD7YSQU; b-sec=H7A3ZVYOXG5O6CIG7HQL4J7UIHCOAOXSWXVJGQ7OXEFJWRMO6T445JWTKI3BCRCC; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC675CBWSP3REU42YTAQTNJUDXURTCNE6YVKRXISUFXTDU7V3U7QL2S3GKYL2ZCNGXSSG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD46QKR5DC3ZOXYJJSMQ7LPFV7Q42XNFW3B6USLKSP4DOKX736ZCQKMJCPUFAFUHXCAGBCJZTXPG55TUBDTGHQHRURVFM7GAY55D5OEZS72URFS7BAH2G5EQXZ6XDSAY7EABH3APEXJ2C7MDIZP2K6O4UWVEXBLKE677BPFI2A; _BELONG_CLIENT_=WPSC4XJXWK5USS4JNZY2X7VRLR5MCBKRSVHEXABGTHDGISIQK5YOLZUXYE7IOIM7MOKO74H6CRN6WHAAR4TMDV3XZWMXZRCRT5XRNE3V356BTOB2Y7LPK66VWQK6HPTGWVXIDXDCPVE3W5WMHAIO6AT2LX2XXVNUCXR34ZWFK6HY45CORGIKOSYDYZBF27WOKTUX6BS4FZMIJWNUX6CB4JAA25ZLF7ZEKYOO4QV5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BMTUJZACIBHXQFAVLRF76VQY5PNJGGJNBEZHSFYYJA3YORRT7FB5AHCOIFQKF3W5RWNUX6CB4JAA26JNMO7AYWNUPZF5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BWZDKMOJ5BS6II53ERY6ALV3ZWPF42L4CPUHEGPYIII35KDC4FCNVCORCXFD6IVNLBEDPB2GGP4UHWNRUDOQBDIW7RZJXBA2WV5ANZOTEGUCDWYRVQS2YUTIZNZ276PRYG4N56V6YTII7MBKBC7LYHO7C555HTSBXGNRM3E466AYN67DHWVM5HQFJ4NFDO5BTFZDZIGJ4U53CZAYTLL4JRDKKAA; _vender_new_=GI63BGTJFDBQ5VFYRAGXDIUTOUGBH4IELSA4HBAE7MB4S5HIL5QMHN2LMW7LKWD43YCKHJGXPJWTPRAEQ2QTFLJHKJUFHCXGGYIHCD7HNPX7P53NJYJBLEQQWIG3SGOKANYJB4AHZAIO2L2TATYNMMFW2T7ATNFOZD4PRFANVIODWIGDFMXKRJ4I6UJ43SNLVNG3LECZBJRH7CNAV24UOKLAU3DX3TBTR5D36HX3PK3QE6SIHOTS432W6FB24YGMPFIXXWGFUD5N4OM5BGIAMJJTSTBINZ7M65V2STDONSMADD2X7KWKLUZTWX3YXOD6XLJPSELOEX5KVPUQJPFLEYACZTDLSK7COP6VUHF22L4RC3RF7KVL5ECLZKZGAAWMEI5HBNI3AHLGZG24ZAN4N7GAGWVI4ZDKBF7ZYJAPU6GHUX2BV7IT2ELA7PH3JOOEANSFTFAJTXVVKULEH4XATPV477XMOLCIYERGKGFXTPLTIGOEN5JDFRA2366QQO5FV2AT2XABQCAT4PRSM6IW44RRTC3OBHJXEAXD2I4FDTV2FPOYRS5HCDD4DBLC7FPXYSMCF5FO7EVNPE3L4QREKVCPKBOC6ZHI7S3X65CN5NLZUA4FQV26AUOUUBOMBMBA; __jda=191429163.17036002655721718781778.1703600266.1703826608.1703855791.17; __jdc=191429163; 3AB9D23F7A4B3C9B=OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLU; __jdb=191429163.72.17036002655721718781778|17.1703855791",
+                "Referer": "https://porder.shop.jd.com/",
+                "Referrer-Policy": "strict-origin-when-cross-origin"
+            },
+            "body": null,
+            "method": "GET"
+        }).then(d => d.text());
+
+        var reg = /^\w+\(({[^()]+})\)$/
+        var matches = result.match(reg)
+        if(matches){
+            const ret = JSON.parse(matches[1])
+            // matches[0]为整个字符串
+            // matches[1]为匹配到的分组
+            this.shopInfo = ret.shopSimpleVO
+        }
+        return result
+    }
 
    async checkLogin() {
        try {
@@ -758,12 +796,13 @@ export class JDService {
 
     async tenMinutesNotify(info1, type) {
         const now = dayjs().format('YYYY-MM-DD hh:mm:ss') // '25/01/2019'
+        const shopName = this.shopInfo.name
 
         let card = {
             "header": {
                 "title": {
                     "tag": "plain_text",
-                    "content": `订单超过十二分钟未跳出暂停改为是通知`
+                    "content": `订单超过十二分钟未跳出暂停改为是通知-${shopName}`
                 },
                 "template": "red"
             },
@@ -852,13 +891,14 @@ export class JDService {
     }
 
     async logoutNotify(data) {
-        const now = dayjs().format('YYYY-MM-DD hh:mm:ss') // '25/01/2019'
+        const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
 
+        const shopName = this.shopInfo.name
         let card = {
             "header": {
                 "title": {
                     "tag": "plain_text",
-                    "content": `京东接口访问异常通知-线程${this.thread}`
+                    "content": `京东接口访问异常通知-线程${this.thread}-${shopName}`
                 },
                 "template": "red"
             },
@@ -867,7 +907,7 @@ export class JDService {
                     "tag": "div",
                     "text": {
                         "tag": "lark_md",
-                        "content": `****`
+                        "content": `京东接口返回值`
                     }
                 },
                 {
@@ -932,10 +972,6 @@ export class JDMainService {
             this.init()
         }, 10000)
     }
-
-    // _threadPool = {
-    //     1
-    // }
 
     _hash = {}
 
