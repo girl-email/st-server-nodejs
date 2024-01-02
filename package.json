@@ -23,6 +23,7 @@
     "@midwayjs/decorator": "^3.0.0",
     "@midwayjs/http-proxy": "^3.0.0",
     "@midwayjs/info": "^3.0.0",
+    "@midwayjs/jwt": "^3.13.9",
     "@midwayjs/koa": "^3.0.0",
     "@midwayjs/logger": "^2.14.0",
     "@midwayjs/redis": "^3.8.0",

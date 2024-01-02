@@ -95,4 +95,17 @@ export default {
         credentials: true,
         // origin: 'https://porder.shop.jd.com',
     },
+    jwt: {
+        secret: 'xxxxxxxxx22222111xxxxx', // fs.readFileSync('xxxxx.key')
+        sign: {
+            // signOptions
+            expiresIn: '100d', // https://github.com/vercel/ms
+        },
+        verify: {
+            // verifyOptions
+        },
+        decode: {
+            // decodeOptions
+        }
+    }
 } as MidwayConfig;

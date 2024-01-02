@@ -44,6 +44,10 @@ export class JDService {
     lastErrorNotifyTime: number
 
 
+
+    fistErrorTime: number
+
+
     private errorNotifyUrl = 'https://open.feishu.cn/open-apis/bot/v2/hook/79e4aded-fdf2-411c-ac25-0156e975a072'
 
     logger = {
@@ -64,21 +68,10 @@ export class JDService {
     CHECK_TIME = 1000 * 30
 
     init() {
-
-        // const customLogger = this.loggerService.getLogger('coreLogger');
-        // this.logger = customLogger
         this.logger.info('初始化');
-        this.getStopOrderList()
+        // this.getStopOrderList()
         // this.getBeiAnList()
-        // this.getShopInfo()
-        // setInterval(() => {
-        //     this.logger.info('开始新的一轮暂停订单检查');
-        //     this.getStopOrderList()
-        // }, this.CHECK_TIME)
-        //
-        // setInterval(() => {
-        //     this.getSendOrderList()
-        // }, this.CHECK_TIME * 1.5)
+        this.getShopInfo()
     }
 
     // 获取暂停的订单列表
@@ -489,7 +482,7 @@ export class JDService {
             },
             "body": body,
             "method": "POST"
-        }).then(d => d.json());;
+        }).then(d => d.json());
         if (res.result.success) {
             this.logger.info(`备案状态修改成功; 商品：${info1.goodsName}; skuId: ${info.skuId}`, type);
         } else {
@@ -524,6 +517,7 @@ export class JDService {
         return  false
     }
 
+    // 获取订单备注
     async getOrderRemark(orderIds) {
         try {
             const result = await fetch(`https://porder.shop.jd.com/order/global/getVenderRemarkMap?orderIds=${orderIds}`, {
@@ -553,6 +547,7 @@ export class JDService {
         }
     }
 
+    // 获取店铺信息
     async getShopInfo() {
         const result = await fetch("https://i.shop.jd.com/optional/topMenu/overview?callback=jsonpCB_1703864564162_0hr4lix2mzgt&appName=jdos_porder-shop&menuId=1500&systemId=1", {
             "headers": {
@@ -581,7 +576,12 @@ export class JDService {
             const ret = JSON.parse(matches[1])
             // matches[0]为整个字符串
             // matches[1]为匹配到的分组
-            this.shopInfo = ret.shopSimpleVO
+            if (ret.shopSimpleVO) {
+                if (ret.shopSimpleVO.name) {
+                    this.shopInfo = ret.shopSimpleVO
+                }
+            }
+            return ret.shopSimpleVO
         }
         return result
     }
@@ -912,6 +912,9 @@ export class JDService {
     }
 
     async logoutNotify(data) {
+        if (!this.fistErrorTime) {
+            this.fistErrorTime = Date.now()
+        }
         if (this.lastErrorNotifyTime) {
             const diffTime = dayjs(dayjs()).diff(this.lastErrorNotifyTime, 'minutes')
             if (diffTime < 5) {
@@ -972,7 +975,7 @@ export class JDService {
                 }
             ]
         }
-        const webhook = this.errorNotifyUrl
+        const webhook = this.errorNotifyUrl;
 
         const options = {
             method: 'POST',
@@ -988,7 +991,7 @@ export class JDService {
             }
         };
        const result = await rp(options);
-        this.lastErrorNotifyTime = Date.now()
+       this.lastErrorNotifyTime = Date.now()
        console.log(result)
     }
 }
@@ -1004,10 +1007,12 @@ export class JDMainService {
 
     _hash = {}
 
+    shopNameHash = {}
+
     errorHash = {}
 
     @Inject()
-    jdService: JDService
+    jdService: JDService;
 
     init() {
         const stringData = fs.readFileSync('data.json', 'utf-8');
@@ -1016,19 +1021,27 @@ export class JDMainService {
             if (!this._hash[item]) {
                 if (data[item]) {
                     this._hash[item] = new JDService(data[item])
-                    this._hash[item].JDCookies = data[item]
+                    this._hash[item].JDCookies = data[item].cookies
                     this._hash[item].thread = item
                 }
             } else {
-                this._hash[item].JDCookies = data[item]
+                this._hash[item].JDCookies = data[item].cookies
                 console.log('更新jd cookies成功')
-
-                const isLogin = await this._hash[item].checkLogin();
-                if(!isLogin) {
+                const isLogin = await this._hash[item].getShopInfo();
+                console.log(isLogin)
+                if(!isLogin.name) {
+                    const diffTime = dayjs(dayjs()).diff(this._hash[item].fistErrorTime, 'minutes')
+                    if(diffTime > 30) {
+                        this._hash[item] = {}
+                    }
                     console.log(`线程${item}, 访问京东接口异常`)
+                } else {
+                    this._hash[item].fistErrorTime = null
                 }
-                if(!this._hash[item].JDCookies) {
-                    delete this._hash[item]
+            }
+            if (!this.shopNameHash[item]) {
+                this.shopNameHash[item] = {
+
                 }
             }
         })

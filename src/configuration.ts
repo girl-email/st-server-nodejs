@@ -15,6 +15,7 @@ import * as proxy from '@midwayjs/http-proxy';
 // import * as security from '@midwayjs/security';
 // import cors from '@koa/cors';
 import * as crossDomain from '@midwayjs/cross-domain';
+import * as jwt from '@midwayjs/jwt';
 
 import {JDMainService}  from './service/jd.service'
 
@@ -32,6 +33,8 @@ import {JDMainService}  from './service/jd.service'
         // typegoose,
         // security,
         proxy,
+        jwt
+
     ],
     importConfigs: [join(__dirname, './config')],
 })

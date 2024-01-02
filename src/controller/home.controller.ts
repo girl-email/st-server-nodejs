@@ -1,20 +1,32 @@
-import { Controller, Get, Post, Body } from '@midwayjs/decorator';
+import {Controller, Get, Post, Body, Inject, Config } from '@midwayjs/decorator';
 import fetch from 'node-fetch'
+import {Context} from "@midwayjs/koa";
 // import fs from 'fs'
 const fs = require('fs')
+import { JwtService } from '@midwayjs/jwt';
 
 @Controller('/')
 export class HomeController {
-  @Get('/')
-  async home(): Promise<any> {
-      const res = await fetch("https://porder.shop.jd.com/order/orderlist", {
-          "headers": {
-              "accept": "application/json, text/plain, */*",
-              "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
-              "cache-control": "no-cache",
-              "content-type": "application/json;charset=UTF-8",
-              "pragma": "no-cache",
-              "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+
+    @Inject()
+    ctx: Context;
+
+    @Inject()
+    jwtService: JwtService;
+
+    @Config('jwt')
+    jwtConfig;
+
+    @Get('/')
+    async home(): Promise<any> {
+        const res = await fetch("https://porder.shop.jd.com/order/orderlist", {
+            "headers": {
+                "accept": "application/json, text/plain, */*",
+                "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                "cache-control": "no-cache",
+                "content-type": "application/json;charset=UTF-8",
+                "pragma": "no-cache",
+                "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
               "sec-ch-ua-mobile": "?0",
               "sec-ch-ua-platform": "\"macOS\"",
               "sec-fetch-dest": "empty",
@@ -32,6 +44,13 @@ export class HomeController {
       return  res
   }
 
+    @Get('/getInfo')
+    async 22(): Promise<any> {
+        return  {
+            code: 1
+        }
+    }
+
   @Post('/saveCookies')
   async save(@Body() body) {
       const stringData = fs.readFileSync('data.json', 'utf-8');
@@ -39,14 +58,57 @@ export class HomeController {
       if (body.thread) {
           fs.writeFileSync('data.json', JSON.stringify({
               ...data,
-              [body.thread]: body.cookies
+              [body.thread]: {
+                  cookies: body.cookies,
+                  time: Date.now()
+              }
           }))
           return body
       } else {
-          const len = Object.keys(data).length+ 1
-          return  {
+          const len = Object.keys(data).length + 1
+          return {
               thread: len
           }
       }
   }
+
+    /**
+     * 用户登陆
+     * @description
+     */
+    @Post('/loginAccount')
+    async loginAccount(@Body() body) {
+        if(body.account && body.pwd) {
+            if (body.account === 'jd' && body.pwd === 'encrypt&&#19#@!.') {
+                const stringData = fs.readFileSync('data.json', 'utf-8');
+                const data = JSON.parse(stringData);
+                const kArr = Object.keys(data);
+                if (kArr.length) {
+                    const newK = kArr[kArr.length - 1] + 1
+                    const token = await this.jwtService.sign({
+                        thread: newK,
+                        time:  Date.now()
+                    });
+                    return {
+                        code: 1,
+                        data: {
+                            token: token,
+                            thread: newK
+                        }
+                    }
+                }
+            }
+            return {
+                code: 0,
+                data: [],
+                message: "用户名或密码错误"
+            }
+        } else {
+            return {
+                code: 0,
+                data: [],
+                message: "用户名或密码错误"
+            }
+        }
+    }
 }
