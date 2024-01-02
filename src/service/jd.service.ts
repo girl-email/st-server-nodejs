@@ -69,10 +69,10 @@ export class JDService {
 
     init() {
         this.logger.info('初始化');
-        this.getStopOrderList()
+        // this.getStopOrderList()
 
-        // this.getBeiAnList()
-        this.getShopInfo()
+        this.getBeiAnList()
+        // this.getShopInfo()
     }
 
     // 获取暂停的订单列表
@@ -251,8 +251,8 @@ export class JDService {
             this.beiAnList.push(...list)
             for (const item of list) {
                 const info = await this.queryOneBeiAnInfo(item.skuId)
-                if (info && info.type == 1) {
-                    await this.updateBeiAn(info, 0);
+                if (info && info.type == 0) {
+                    await this.updateBeiAn(info, 1);
                 }
             }
             if (page < res.totalPage) {
@@ -1029,7 +1029,7 @@ export class JDMainService {
                 this._hash[item].JDCookies = data[item].cookies
                 console.log('更新jd cookies成功')
                 const isLogin = await this._hash[item].getShopInfo();
-                console.log(isLogin)
+                // console.log(isLogin)
                 if(!isLogin.name) {
                     const diffTime = dayjs(dayjs()).diff(this._hash[item].fistErrorTime, 'minutes')
                     if(diffTime > 30) {

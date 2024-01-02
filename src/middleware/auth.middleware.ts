@@ -23,10 +23,10 @@ export class AuthMiddleware implements IMiddleware<Context, NextFunction> {
             try {
                 //jwt.verify方法验证token是否有效
                 if (typeof token === "string") {
-                    const res = await this.jwtService.verify(token, {
+                    await this.jwtService.verify(token, {
                         complete: true,
                     });
-                    console.log(res)
+                    // console.log(res)
                     return await next();
                 }
             } catch (error) {
