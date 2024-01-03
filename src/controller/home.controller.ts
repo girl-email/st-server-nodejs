@@ -66,7 +66,7 @@ export class HomeController {
           return body
       } else {
           const kArr = Object.keys(data);
-          const newK = kArr[kArr.length - 1] + 2
+          const newK = Number(kArr[kArr.length - 1]) + 2
           const len = newK
           return {
               thread: len
