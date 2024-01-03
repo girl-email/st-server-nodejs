@@ -153,6 +153,9 @@ export class JDService {
                     info.paymentConfirmTime = item.paymentConfirmTime
                     order.mainSkuId = info.skuId
                     if (info.type == 1) {
+                        if (diffTime > 12) {
+                            return
+                        }
                         const success = await this.updateBeiAn(info, 0);
                         if (success) {
                             this.sendFeiShu(
@@ -172,7 +175,7 @@ export class JDService {
                             if (!hasOrder) {
                                 const success = await this.updateBeiAn(info, 1);
                                 if (success) {
-                                    // this.tenMinutesNotify(info, 1)
+                                    this.tenMinutesNotify(info, 1)
                                 }
                             }
                         }
