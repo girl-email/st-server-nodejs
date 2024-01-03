@@ -9,11 +9,21 @@ const rp = require('request-promise');
 import Youdao from '@opentranslate/youdao'
 // @ts-ignore
 const Youdao = require('youdao-fanyi');
-import fetch from 'node-fetch'
+import nfetch from 'node-fetch'
 import * as koa from "@midwayjs/koa";
 const fs = require('fs')
 import { MidwayLoggerService } from '@midwayjs/core';
 const dayjs = require('dayjs')
+
+function  fetch(url, options, timeout = 60000) {
+    return Promise.race([
+        nfetch(url, options),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), timeout)
+        )
+    ]);
+}
+
 
 @Provide()
 export class JDService {
@@ -72,7 +82,7 @@ export class JDService {
         this.getStopOrderList()
         //
         // this.getBeiAnList()
-        // this.getShopInfo()
+        this.getShopInfo()
     }
 
     // 获取暂停的订单列表
@@ -340,23 +350,23 @@ export class JDService {
         //     }).catch(err => {
         //         console.log(err)
         //     });
-            const result = {};
-            const orderList = result.orderList;
-            for await (const item of orderList) {
-                const orderItems = item.orderItems;
-                for (const order of orderItems) {
-                    const skuId = order.skuId
-                    const hasSkuInStop = this.stopListHasSku(skuId);
-                    if (!hasSkuInStop) {
-                        const info = await this.queryOneBeiAnInfo(skuId)
-                        if(!info) continue
-                        const hasSkuInStop = this.stopListHasSku(info.skuId);
-                        if (!hasSkuInStop && info && info.type == 0) {
-                            await this.updateBeiAn(info, 1)
-                        }
-                    }
-                }
-            }
+        //     const result = {};
+        //     const orderList = result.orderList;
+        //     for await (const item of orderList) {
+        //         const orderItems = item.orderItems;
+        //         for (const order of orderItems) {
+        //             const skuId = order.skuId
+        //             const hasSkuInStop = this.stopListHasSku(skuId);
+        //             if (!hasSkuInStop) {
+        //                 const info = await this.queryOneBeiAnInfo(skuId)
+        //                 if(!info) continue
+        //                 const hasSkuInStop = this.stopListHasSku(info.skuId);
+        //                 if (!hasSkuInStop && info && info.type == 0) {
+        //                     await this.updateBeiAn(info, 1)
+        //                 }
+        //             }
+        //         }
+        //     }
 
             setTimeout(() => {
                 this.getStopOrderList()
