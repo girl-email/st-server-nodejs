@@ -172,7 +172,7 @@ export class JDService {
                             if (!hasOrder) {
                                 const success = await this.updateBeiAn(info, 1);
                                 if (success) {
-                                    this.tenMinutesNotify(info, 1)
+                                    // this.tenMinutesNotify(info, 1)
                                 }
                             }
                         }
