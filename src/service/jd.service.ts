@@ -71,7 +71,7 @@ export class JDService {
         this.logger.info('初始化');
         this.getStopOrderList()
         //
-        this.getBeiAnList()
+        // this.getBeiAnList()
         // this.getShopInfo()
     }
 
