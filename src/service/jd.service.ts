@@ -57,6 +57,8 @@ export class JDService {
 
     fistErrorTime: number
 
+    die = false
+
 
     private errorNotifyUrl = 'https://open.feishu.cn/open-apis/bot/v2/hook/79e4aded-fdf2-411c-ac25-0156e975a072'
 
@@ -73,6 +75,8 @@ export class JDService {
     public stopList = [];
 
     public stopListBak = []
+
+    public errOrderMap = {}
 
     // 检查频次
     CHECK_TIME = 1000 * 30
@@ -92,10 +96,10 @@ export class JDService {
             const res = await this.findStopOrder()
 
             if (Array.isArray(res.orderList)) {
-                this.logger.info('京东可以访问', this.thread)
+                this.logger.info('京东可以访问', this.thread, this.shopInfo.name)
             } else {
                 this.logoutNotify(res)
-                this.logger.info('登录过期', this.thread)
+                this.logger.info('登录过期', this.thread, this.shopInfo.name)
             }
             this.stopListBak = [...this.stopList]
             this.stopList = res.orderList || [];
@@ -114,7 +118,7 @@ export class JDService {
                     const orderItems = item.orderItems;
                     for (const order of orderItems) {
                         const skuId = order.skuId
-                        const hasOtherOrder = await this.stopListHasSkuOtherOrder(skuId, item.orderId)
+                        const hasOtherOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
                         if (hasOtherOrder) {
                             continue;
                         }
@@ -122,15 +126,19 @@ export class JDService {
                         if (info) {
                             info.orderId = item.orderId
                             info.paymentConfirmTime = item.paymentConfirmTime
-                            const success = await this.updateBeiAn(info, 1)
-                            if (success) {
-                                this.jumpSendFeiShu(
-                                    {
-                                        ...info,
-                                        skuName: order.skuName
-                                    },
-                                    1
-                                )
+                            try {
+                                const success = await this.updateBeiAn(info, 1)
+                                if (success) {
+                                    this.jumpSendFeiShu(
+                                        {
+                                            ...info,
+                                            skuName: order.skuName
+                                        },
+                                        1
+                                    )
+
+                                }
+                            } catch (e) {
 
                             }
                         }
@@ -155,6 +163,8 @@ export class JDService {
                     }
                 }
 
+                // await this.getOrderDetail(item.orderId)
+
                 for await (const order of orderItems) {
                     const skuId = order.skuId
                     const info = await this.queryOneBeiAnInfo(skuId)
@@ -164,7 +174,7 @@ export class JDService {
                     order.mainSkuId = info.skuId
                     if (info.type == 1) {
                         if (diffTime > 12) {
-                            return
+                            continue
                         }
                         const success = await this.updateBeiAn(info, 0);
                         if (success) {
@@ -178,9 +188,13 @@ export class JDService {
                     } else {
                         const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
                         // 超过十分钟
-                        if (diffTime >= 12) {
+                        if (diffTime >= 12 && diffTime <= 7200) {
+                            if (this.errOrderMap[item.orderId]) {
+                                continue
+                            }
+                            this.errOrderMap[item.orderId] = true
                             this.logger.info(item.orderId, '超过十二分钟啦')
-                            const hasOrder = await this.stopListHasSkuOtherOrder(skuId, item.orderId)
+                            const hasOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
                             // 如果其他订单不包含此sku
                             if (!hasOrder) {
                                 const success = await this.updateBeiAn(info, 1);
@@ -193,15 +207,15 @@ export class JDService {
                 }
             }
             setTimeout(() => {
-                this.getSendOrderList()
-            },10000)
+                this.getStopOrderList()
+            },18000)
             return  {
                 res,
             }
         } catch (e) {
             console.log(e, 'error, stop Order')
             setTimeout(() => {
-                this.getSendOrderList()
+                this.getStopOrderList()
             },10000)
         }
     }
@@ -379,7 +393,7 @@ export class JDService {
         // const now = Date.now()
     }
     // 更新备案
-    async updateBeiAn(info1, type = 1) {
+    async updateBeiAn(info1, type = 1, time? = 0) {
         let info = {
             "id": 16193866,
             "operationSign": 1,
@@ -473,10 +487,14 @@ export class JDService {
         // "body":"goodsPicture=&goodsData=&goodsAttach=&id=16193797&customId=guangzhou&customsRegionCode=5141&ccProviderName=VIE%E4%BC%9F%E4%B8%96%E5%8D%9A&customModel=zhiyou&venderName=chaojie%E4%B8%AA%E4%BA%BA%E6%8A%A4%E7%90%86%E6%B5%B7%E5%A4%96%E4%B8%93%E8%90%A5%E5%BA%97&venderId=13942040&eclpCode=EBU4418055093551&skuId=10089822950614&type=1&taxCommitmentsway=0&upc=0697291997310924&emgSkuId=&goodsName=Lee%E7%89%9B%E4%BB%94%E8%A3%A4&goodsNameEn=lee+jeans&brand=%E6%97%A0&brandEn=Lee&xingHao=%E6%97%A0&spe=1%2F%E6%9D%A1&unit=%E6%9D%A1&goodsSellerPrice=317&grossWeight=0.04&netWeight=0.03&actualWeight=&volume=&safeDays=1359&salesWebSite=&hsCode=6203429090&hgsbys=Lee+9+%E6%9C%BA%E7%BB%87+%E9%95%BF%E8%A3%A4+%E5%A5%B3%E5%BC%8F+%E6%A3%89+Lee+0697291997310924&function=%E6%97%A0&use=%E6%97%A0&composition=%E6%97%A0&vatRate=13&taxRate=0&originCountry=%E6%B3%95%E5%9B%BD&originArea=%E6%B3%95%E5%9B%BD%EF%BC%9B%E4%BA%A7%E5%93%81%E6%89%B9%E6%AC%A1%E4%B8%8D%E5%90%8C%EF%BC%8C%E4%BA%A7%E5%93%81%E4%BA%A7%E5%9C%B0%E4%BB%A5%E5%AE%9E%E7%89%A9%E4%B8%BA%E5%87%86&manufacturer=%E6%B3%95%E5%9B%BD%EF%BC%9B%E4%BA%A7%E5%93%81%E6%89%B9%E6%AC%A1%E4%B8%8D%E5%90%8C%EF%BC%8C%E4%BA%A7%E5%93%81%E4%BA%A7%E5%9C%B0%E4%BB%A5%E5%AE%9E%E7%89%A9%E4%B8%BA%E5%87%86&roduceAddress=&supplier=&note=&mfnTariff=5&penaltyTariff=13&phone=134239015485&email=1608586943%40qq.com&eclpName=ChaojieTradeLimited&ccProvider=010021","method":"POST","mode":"cors"});fetch("https://shop-hk.jd.com/popRecording/recorded/changeRecording.do", {"credentials":"include","headers":{"accept":"*/*","accept-language":"zh-CN,zh;q=0.9","content-type":"application/x-www-form-urlencoded; charset=UTF-8","sec-fetch-mode":"cors","sec-fetch-site":"same-origin","x-requested-with":"XMLHttpRequest"},"referrer":"https://shop-hk.jd.com/popRecording/recorded/queryById.do?recorded=true&id=16193797","referrerPolicy":"no-referrer-when-downgrade","body":"goodsPicture=&goodsData=&goodsAttach=&id=16193797&customId=guangzhou&customsRegionCode=5141&ccProviderName=VIE%E4%BC%9F%E4%B8%96%E5%8D%9A&customModel=zhiyou&venderName=chaojie%E4%B8%AA%E4%BA%BA%E6%8A%A4%E7%90%86%E6%B5%B7%E5%A4%96%E4%B8%93%E8%90%A5%E5%BA%97&venderId=13942040&eclpCode=EBU4418055093551&skuId=10089822950614&type=1&taxCommitmentsway=0&upc=0697291997310924&emgSkuId=&goodsName=Lee%E7%89%9B%E4%BB%94%E8%A3%A4&goodsNameEn=lee+jeans&brand=%E6%97%A0&brandEn=Lee&xingHao=%E6%97%A0&spe=1%2F%E6%9D%A1&unit=%E6%9D%A1&goodsSellerPrice=317&grossWeight=0.04&netWeight=0.03&actualWeight=&volume=&safeDays=1359&salesWebSite=&hsCode=6203429090&hgsbys=Lee+9+%E6%9C%BA%E7%BB%87+%E9%95%BF%E8%A3%A4+%E5%A5%B3%E5%BC%8F+%E6%A3%89+Lee+0697291997310924&function=%E6%97%A0&use=%E6%97%A0&composition=%E6%97%A0&vatRate=13&taxRate=0&originCountry=%E6%B3%95%E5%9B%BD&originArea=%E6%B3%95%E5%9B%BD%EF%BC%9B%E4%BA%A7%E5%93%81%E6%89%B9%E6%AC%A1%E4%B8%8D%E5%90%8C%EF%BC%8C%E4%BA%A7%E5%93%81%E4%BA%A7%E5%9C%B0%E4%BB%A5%E5%AE%9E%E7%89%A9%E4%B8%BA%E5%87%86&manufacturer=%E6%B3%95%E5%9B%BD%EF%BC%9B%E4%BA%A7%E5%93%81%E6%89%B9%E6%AC%A1%E4%B8%8D%E5%90%8C%EF%BC%8C%E4%BA%A7%E5%93%81%E4%BA%A7%E5%9C%B0%E4%BB%A5%E5%AE%9E%E7%89%A9%E4%B8%BA%E5%87%86&roduceAddress=&supplier=&note=&mfnTariff=5&penaltyTariff=13&phone=134239015485&email=1608586943%40qq.com&eclpName=ChaojieTradeLimited&ccProvider=010021","method":"POST","mode":"cors"});
         info = {...info1}
         for (const k in info) {
-            info[k] = encodeURIComponent(info[k])
+            if (info[k] == null || info[k] == "null") {
+                info[k] = ''
+            } else {
+                info[k] = encodeURIComponent(info[k])
+            }
         }
 
-        const body = `goodsPicture=${info.goodsPicture}&goodsData=${info.goodsData}&goodsAttach=${info.goodsAttach}&id=${info.id}&customId=${info.customId}&customsRegionCode=${info.customsRegionCode}&ccProviderName=${info.ccProviderName}&customModel=${info.customModel}&venderName=${info.venderName}&venderId=${info.venderId}&eclpCode=${info.eclpCode}&skuId=${info.skuId}&type=${type}&taxCommitmentsway=${info.taxCommitmentsway}&upc=${info.upc}&emgSkuId=&goodsName=${info.goodsName}&goodsNameEn=${info.goodsNameEn}&brand=${info.brand}&brandEn=${info.brandEn}&xingHao=${info.xingHao}&spe=${info.spe}&unit=${info.unit}&goodsSellerPrice=${info.goodsSellerPrice}&grossWeight=${info.grossWeight}&netWeight=${info.netWeight}&actualWeight=&volume=&safeDays=${info.safeDays}&salesWebSite=${info.salesWebSite}&hsCode=${info.hsCode}&hgsbys=${info.hgsbys}&function=${info.function}&use=${info.use}&composition=${info.composition}&vatRate=${info.vatRate}&taxRate=${info.taxRate}&originCountry=${info.originCountry}&originArea=${info.originArea}&manufacturer=${info.manufacturer}&roduceAddress=${info.roduceAddress}&supplier=${info.supplier}&note=${info.note}&mfnTariff=${info.mfnTariff}&penaltyTariff=${info.penaltyTariff}&phone=${info.phone}&email=${info.email}&eclpName=${info.eclpName}&ccProvider=${info.ccProvider}`
+        const body = `goodsPicture=${info.goodsPicture}&goodsData=${info.goodsData}&goodsAttach=${info.goodsAttach}&id=${info.id}&customId=${info.customId}&customsRegionCode=${info.customsRegionCode}&ccProviderName=${info.ccProviderName}&customModel=${info.customModel}&venderName=${info.venderName}&venderId=${info.venderId}&eclpCode=${info.eclpCode}&skuId=${info.skuId}&type=${type}&taxCommitmentsway=${info.taxCommitmentsway}&upc=${info.upc}&emgSkuId=${info.emgSkuId}&goodsName=${info.goodsName}&goodsNameEn=${info.goodsNameEn}&brand=${info.brand}&brandEn=${info.brandEn}&xingHao=${info.xingHao}&spe=${info.spe}&unit=${info.unit}&goodsSellerPrice=${info.goodsSellerPrice}&grossWeight=${info.grossWeight}&netWeight=${info.netWeight}&actualWeight=${info.actualWeight != 'null'? info.actualWeight: ''}&volume=${info.volume}&safeDays=${info.safeDays}&salesWebSite=${info.salesWebSite}&hsCode=${info.hsCode}&hgsbys=${info.hgsbys}&function=${info.function}&use=${info.use}&composition=${info.composition}&vatRate=${info.vatRate}&taxRate=${info.taxRate}&originCountry=${info.originCountry}&originArea=${info.originArea}&manufacturer=${info.manufacturer}&roduceAddress=${info.roduceAddress}&supplier=${info.supplier}&note=${info.note}&mfnTariff=${info.mfnTariff}&penaltyTariff=${info.penaltyTariff}&phone=${info.phone}&email=${info.email}&eclpName=${info.eclpName}&ccProvider=${info.ccProvider}`
 
             const res = await fetch("https://shop-hk.jd.com/popRecording/recorded/changeRecording.do", {
             "headers": {
@@ -499,8 +517,18 @@ export class JDService {
         }).then(d => d.json());
         if (res.result.success) {
             this.logger.info(`备案状态修改成功; 商品：${info1.goodsName}; skuId: ${info.skuId}`, type);
+            if (time > 0) {
+                this.reTrySuccess(info1, type)
+            }
         } else {
-            this.logger.info(`备案状态修改失败; 商品：${info1.goodsName}; skuId: ${info.skuId}`, JSON.stringify(res.result), type);
+            this.logger.info(`备案状态修改失败; 商品：${info1.goodsName}; skuId: ${info.skuId}`, JSON.stringify(res.result), type, this.shopInfo.name);
+            this.eidtBeianFail({txt: `备案状态修改失败; 商品：${info1.goodsName}; skuId: ${info.skuId}`, ...res.result}, type)
+            if (time > 0) {
+                this.logger.info(`备案状态修改失败; 商品：${info1.goodsName}; skuId: ${info.skuId}`, JSON.stringify(res.result), type, this.shopInfo.name);
+            }
+            if (type === 1 && time <= 2) {
+                setTimeout(() => this.updateBeiAn(info1, type, time + 1), 5000)
+            }
         }
         return res.result.success;
     }
@@ -563,41 +591,76 @@ export class JDService {
 
     // 获取店铺信息
     async getShopInfo() {
-        const result = await fetch("https://i.shop.jd.com/optional/topMenu/overview?callback=jsonpCB_1703864564162_0hr4lix2mzgt&appName=jdos_porder-shop&menuId=1500&systemId=1", {
-            "headers": {
-                "accept": "*/*",
-                "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
-                "cache-control": "no-cache",
-                "pragma": "no-cache",
-                "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": "\"macOS\"",
-                "sec-fetch-dest": "script",
-                "sec-fetch-mode": "no-cors",
-                "sec-fetch-site": "same-site",
-                "cookie": this.JDCookies,
-                // "cookie": "__jdv=56585130|direct|-|none|-|1703600265575; pinId=Mk_A6Nbv7MenkDneLmJDcA; unick=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; _tp=WWkrE5q1uaY3bnuvPN7mC0Jy7Qj98SqryFRfDnmAGXBfj3EZkqYEdCCNPQpAbAri; _pst=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; __jdu=17036002655721718781778; 3AB9D23F7A4B3CSS=jdd03OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLUAAAAMMWCNULEAAAAAACOUKVNVUZZMDCUX; areaId=15; ipLoc-djd=15-1213-0-0; PCSYCityID=CN_330000_330100_0; language=zh_CN; smb_track=02DE91E68A90440681C0768B8C50A8BD; __USE_NEW_PAGEFRAME__=false; __USE_NEW_PAGEFRAME_VERSION__=v9; chat.jd.com=20170206; shshshfpb=AAiuCuLWMEpILfXnDP1RQdOco4vsSWBcDNClSUAAAAAA; QRCodeKEY=FC836460F1597075BD11887C4243E4A30E91A73D1DBCC75EEA63772BECCE94D89D2938D1818DA81A6C2501F503C01641; AESKEY=0EF530754B66CB9E; UIDKEY=102388463689062392; flash=2_IH1En_p4pwB7anzpN4g9YeEy6Cq8ndW6Gl4ZpRhSmLrJ3vp8VvF25G6kyptLLnI-5nsJ-ZlwdYkoPIncHUxs9ZmzBuYtJ21Mi-ReZGcdKmN*; TrackID=1tQ2ZaAoH6gQDGLIezMKIcWKp1ZonH3gP7yCOW311TyIqCWAL-VXhYZmVSowlStoC; thor=6901B38FCABE2222F893FE4DA6A41AD2EFBE1AE6D506095B2FAEDCEB50D6317CF4ED710E59A5BDC07B494EF3DEDA3AE77FF31FAE97C6939F67A9A90C4BB9533D6895B99957A61581CA0D1D092A6614CD5F6CE1A5E8216EFA2E7DC597CC1C9E9BDB25B69C9A9E8864B98C566DF2DFC030725042F0FEA51948BF9FA21D5D465EFDDC06968E1D3CA878812E3F9037676FEC; ceshi3.com=000; _vender_=TNK3O6PALVQGGMI642LJKJZPNN56IZEONGC7GL4VVDUXDFCCPPZQLPMTKJILMAPLXETACDXPW6K7OJOQKR2XAEWZEUALDGQXK7G2A7QXSDNOYW6CAGCPRLP5Z3NIZCHA4EL275ID7OHDWKJCG3IKWJEKBLKXNRBLHPI43M6V7YP2SC4RQRZXNIFA6PUCI7UIJYQMBTNIZIILXODG4AMBHU7KVXB7C3FVYYIDB6CNUJRIY3OXKRFOLJ5NJPZVGTXO3MGRB5OZSQZPUXK7OTV5QTIP7NLKLLY3WYJPC4VDZHQGTTOSIIB5LHCFEU46QULB2S23NQFGX3NFYRWZZ4RSVT5V5XCLCR6ORQNFC6Z6LN7AOMH5WXHCJZAENA6SMDSKCIYM3B25NWIYPAC4U3MBP2BDLJVVANWICDN6T6NZ5EU4TAACUTVVOVRLM6JTGYD7NX4IWYHATFWDNHVJJUNUDUHMVNYQT2FAZY4YIO2ZIMJX5UUINOJOE5UGJGNEXRP3LEVEOKPEKYZQTGIEMICOMRE5O6LV2SNJ2JIEFB6S7UW65Q4TE6WWMAOJYZN26OZVDWM5N6CVR2ER6YG3W4SVEC3KWSVM7MJTUZNQVYDSJGIVLO3MU25PV33A5NUN7KDRRNKGCEK4V6MSOXETOVWA664XIMTDRCC4ZMMDMWXRXDHQ7WUHLISPYU7RSWJYVDGDHNBIGEPD7YSQU; b-sec=H7A3ZVYOXG5O6CIG7HQL4J7UIHCOAOXSWXVJGQ7OXEFJWRMO6T445JWTKI3BCRCC; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC675CBWSP3REU42YTAQTNJUDXURTCNE6YVKRXISUFXTDU7V3U7QL2S3GKYL2ZCNGXSSG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD46QKR5DC3ZOXYJJSMQ7LPFV7Q42XNFW3B6USLKSP4DOKX736ZCQKMJCPUFAFUHXCAGBCJZTXPG55TUBDTGHQHRURVFM7GAY55D5OEZS72URFS7BAH2G5EQXZ6XDSAY7EABH3APEXJ2C7MDIZP2K6O4UWVEXBLKE677BPFI2A; _BELONG_CLIENT_=WPSC4XJXWK5USS4JNZY2X7VRLR5MCBKRSVHEXABGTHDGISIQK5YOLZUXYE7IOIM7MOKO74H6CRN6WHAAR4TMDV3XZWMXZRCRT5XRNE3V356BTOB2Y7LPK66VWQK6HPTGWVXIDXDCPVE3W5WMHAIO6AT2LX2XXVNUCXR34ZWFK6HY45CORGIKOSYDYZBF27WOKTUX6BS4FZMIJWNUX6CB4JAA25ZLF7ZEKYOO4QV5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BMTUJZACIBHXQFAVLRF76VQY5PNJGGJNBEZHSFYYJA3YORRT7FB5AHCOIFQKF3W5RWNUX6CB4JAA26JNMO7AYWNUPZF5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BWZDKMOJ5BS6II53ERY6ALV3ZWPF42L4CPUHEGPYIII35KDC4FCNVCORCXFD6IVNLBEDPB2GGP4UHWNRUDOQBDIW7RZJXBA2WV5ANZOTEGUCDWYRVQS2YUTIZNZ276PRYG4N56V6YTII7MBKBC7LYHO7C555HTSBXGNRM3E466AYN67DHWVM5HQFJ4NFDO5BTFZDZIGJ4U53CZAYTLL4JRDKKAA; _vender_new_=GI63BGTJFDBQ5VFYRAGXDIUTOUGBH4IELSA4HBAE7MB4S5HIL5QMHN2LMW7LKWD43YCKHJGXPJWTPRAEQ2QTFLJHKJUFHCXGGYIHCD7HNPX7P53NJYJBLEQQWIG3SGOKANYJB4AHZAIO2L2TATYNMMFW2T7ATNFOZD4PRFANVIODWIGDFMXKRJ4I6UJ43SNLVNG3LECZBJRH7CNAV24UOKLAU3DX3TBTR5D36HX3PK3QE6SIHOTS432W6FB24YGMPFIXXWGFUD5N4OM5BGIAMJJTSTBINZ7M65V2STDONSMADD2X7KWKLUZTWX3YXOD6XLJPSELOEX5KVPUQJPFLEYACZTDLSK7COP6VUHF22L4RC3RF7KVL5ECLZKZGAAWMEI5HBNI3AHLGZG24ZAN4N7GAGWVI4ZDKBF7ZYJAPU6GHUX2BV7IT2ELA7PH3JOOEANSFTFAJTXVVKULEH4XATPV477XMOLCIYERGKGFXTPLTIGOEN5JDFRA2366QQO5FV2AT2XABQCAT4PRSM6IW44RRTC3OBHJXEAXD2I4FDTV2FPOYRS5HCDD4DBLC7FPXYSMCF5FO7EVNPE3L4QREKVCPKBOC6ZHI7S3X65CN5NLZUA4FQV26AUOUUBOMBMBA; __jda=191429163.17036002655721718781778.1703600266.1703826608.1703855791.17; __jdc=191429163; 3AB9D23F7A4B3C9B=OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLU; __jdb=191429163.72.17036002655721718781778|17.1703855791",
-                "Referer": "https://porder.shop.jd.com/",
-                "Referrer-Policy": "strict-origin-when-cross-origin"
-            },
-            "body": null,
-            "method": "GET"
-        }).then(d => d.text());
+        try {
+            const result = await fetch("https://i.shop.jd.com/optional/topMenu/overview?callback=jsonpCB_1703864564162_0hr4lix2mzgt&appName=jdos_porder-shop&menuId=1500&systemId=1", {
+                "headers": {
+                    "accept": "*/*",
+                    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                    "cache-control": "no-cache",
+                    "pragma": "no-cache",
+                    "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+                    "sec-ch-ua-mobile": "?0",
+                    "sec-ch-ua-platform": "\"macOS\"",
+                    "sec-fetch-dest": "script",
+                    "sec-fetch-mode": "no-cors",
+                    "sec-fetch-site": "same-site",
+                    "cookie": this.JDCookies,
+                    // "cookie": "__jdv=56585130|direct|-|none|-|1703600265575; pinId=Mk_A6Nbv7MenkDneLmJDcA; unick=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; _tp=WWkrE5q1uaY3bnuvPN7mC0Jy7Qj98SqryFRfDnmAGXBfj3EZkqYEdCCNPQpAbAri; _pst=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; __jdu=17036002655721718781778; 3AB9D23F7A4B3CSS=jdd03OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLUAAAAMMWCNULEAAAAAACOUKVNVUZZMDCUX; areaId=15; ipLoc-djd=15-1213-0-0; PCSYCityID=CN_330000_330100_0; language=zh_CN; smb_track=02DE91E68A90440681C0768B8C50A8BD; __USE_NEW_PAGEFRAME__=false; __USE_NEW_PAGEFRAME_VERSION__=v9; chat.jd.com=20170206; shshshfpb=AAiuCuLWMEpILfXnDP1RQdOco4vsSWBcDNClSUAAAAAA; QRCodeKEY=FC836460F1597075BD11887C4243E4A30E91A73D1DBCC75EEA63772BECCE94D89D2938D1818DA81A6C2501F503C01641; AESKEY=0EF530754B66CB9E; UIDKEY=102388463689062392; flash=2_IH1En_p4pwB7anzpN4g9YeEy6Cq8ndW6Gl4ZpRhSmLrJ3vp8VvF25G6kyptLLnI-5nsJ-ZlwdYkoPIncHUxs9ZmzBuYtJ21Mi-ReZGcdKmN*; TrackID=1tQ2ZaAoH6gQDGLIezMKIcWKp1ZonH3gP7yCOW311TyIqCWAL-VXhYZmVSowlStoC; thor=6901B38FCABE2222F893FE4DA6A41AD2EFBE1AE6D506095B2FAEDCEB50D6317CF4ED710E59A5BDC07B494EF3DEDA3AE77FF31FAE97C6939F67A9A90C4BB9533D6895B99957A61581CA0D1D092A6614CD5F6CE1A5E8216EFA2E7DC597CC1C9E9BDB25B69C9A9E8864B98C566DF2DFC030725042F0FEA51948BF9FA21D5D465EFDDC06968E1D3CA878812E3F9037676FEC; ceshi3.com=000; _vender_=TNK3O6PALVQGGMI642LJKJZPNN56IZEONGC7GL4VVDUXDFCCPPZQLPMTKJILMAPLXETACDXPW6K7OJOQKR2XAEWZEUALDGQXK7G2A7QXSDNOYW6CAGCPRLP5Z3NIZCHA4EL275ID7OHDWKJCG3IKWJEKBLKXNRBLHPI43M6V7YP2SC4RQRZXNIFA6PUCI7UIJYQMBTNIZIILXODG4AMBHU7KVXB7C3FVYYIDB6CNUJRIY3OXKRFOLJ5NJPZVGTXO3MGRB5OZSQZPUXK7OTV5QTIP7NLKLLY3WYJPC4VDZHQGTTOSIIB5LHCFEU46QULB2S23NQFGX3NFYRWZZ4RSVT5V5XCLCR6ORQNFC6Z6LN7AOMH5WXHCJZAENA6SMDSKCIYM3B25NWIYPAC4U3MBP2BDLJVVANWICDN6T6NZ5EU4TAACUTVVOVRLM6JTGYD7NX4IWYHATFWDNHVJJUNUDUHMVNYQT2FAZY4YIO2ZIMJX5UUINOJOE5UGJGNEXRP3LEVEOKPEKYZQTGIEMICOMRE5O6LV2SNJ2JIEFB6S7UW65Q4TE6WWMAOJYZN26OZVDWM5N6CVR2ER6YG3W4SVEC3KWSVM7MJTUZNQVYDSJGIVLO3MU25PV33A5NUN7KDRRNKGCEK4V6MSOXETOVWA664XIMTDRCC4ZMMDMWXRXDHQ7WUHLISPYU7RSWJYVDGDHNBIGEPD7YSQU; b-sec=H7A3ZVYOXG5O6CIG7HQL4J7UIHCOAOXSWXVJGQ7OXEFJWRMO6T445JWTKI3BCRCC; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC675CBWSP3REU42YTAQTNJUDXURTCNE6YVKRXISUFXTDU7V3U7QL2S3GKYL2ZCNGXSSG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD46QKR5DC3ZOXYJJSMQ7LPFV7Q42XNFW3B6USLKSP4DOKX736ZCQKMJCPUFAFUHXCAGBCJZTXPG55TUBDTGHQHRURVFM7GAY55D5OEZS72URFS7BAH2G5EQXZ6XDSAY7EABH3APEXJ2C7MDIZP2K6O4UWVEXBLKE677BPFI2A; _BELONG_CLIENT_=WPSC4XJXWK5USS4JNZY2X7VRLR5MCBKRSVHEXABGTHDGISIQK5YOLZUXYE7IOIM7MOKO74H6CRN6WHAAR4TMDV3XZWMXZRCRT5XRNE3V356BTOB2Y7LPK66VWQK6HPTGWVXIDXDCPVE3W5WMHAIO6AT2LX2XXVNUCXR34ZWFK6HY45CORGIKOSYDYZBF27WOKTUX6BS4FZMIJWNUX6CB4JAA25ZLF7ZEKYOO4QV5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BMTUJZACIBHXQFAVLRF76VQY5PNJGGJNBEZHSFYYJA3YORRT7FB5AHCOIFQKF3W5RWNUX6CB4JAA26JNMO7AYWNUPZF5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BWZDKMOJ5BS6II53ERY6ALV3ZWPF42L4CPUHEGPYIII35KDC4FCNVCORCXFD6IVNLBEDPB2GGP4UHWNRUDOQBDIW7RZJXBA2WV5ANZOTEGUCDWYRVQS2YUTIZNZ276PRYG4N56V6YTII7MBKBC7LYHO7C555HTSBXGNRM3E466AYN67DHWVM5HQFJ4NFDO5BTFZDZIGJ4U53CZAYTLL4JRDKKAA; _vender_new_=GI63BGTJFDBQ5VFYRAGXDIUTOUGBH4IELSA4HBAE7MB4S5HIL5QMHN2LMW7LKWD43YCKHJGXPJWTPRAEQ2QTFLJHKJUFHCXGGYIHCD7HNPX7P53NJYJBLEQQWIG3SGOKANYJB4AHZAIO2L2TATYNMMFW2T7ATNFOZD4PRFANVIODWIGDFMXKRJ4I6UJ43SNLVNG3LECZBJRH7CNAV24UOKLAU3DX3TBTR5D36HX3PK3QE6SIHOTS432W6FB24YGMPFIXXWGFUD5N4OM5BGIAMJJTSTBINZ7M65V2STDONSMADD2X7KWKLUZTWX3YXOD6XLJPSELOEX5KVPUQJPFLEYACZTDLSK7COP6VUHF22L4RC3RF7KVL5ECLZKZGAAWMEI5HBNI3AHLGZG24ZAN4N7GAGWVI4ZDKBF7ZYJAPU6GHUX2BV7IT2ELA7PH3JOOEANSFTFAJTXVVKULEH4XATPV477XMOLCIYERGKGFXTPLTIGOEN5JDFRA2366QQO5FV2AT2XABQCAT4PRSM6IW44RRTC3OBHJXEAXD2I4FDTV2FPOYRS5HCDD4DBLC7FPXYSMCF5FO7EVNPE3L4QREKVCPKBOC6ZHI7S3X65CN5NLZUA4FQV26AUOUUBOMBMBA; __jda=191429163.17036002655721718781778.1703600266.1703826608.1703855791.17; __jdc=191429163; 3AB9D23F7A4B3C9B=OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLU; __jdb=191429163.72.17036002655721718781778|17.1703855791",
+                    "Referer": "https://porder.shop.jd.com/",
+                    "Referrer-Policy": "strict-origin-when-cross-origin"
+                },
+                "body": null,
+                "method": "GET"
+            }).then(d => d.text());
 
-        var reg = /^\w+\(({[^()]+})\)$/
-        var matches = result.match(reg)
-        if(matches){
-            const ret = JSON.parse(matches[1])
-            // matches[0]为整个字符串
-            // matches[1]为匹配到的分组
-            if (ret.shopSimpleVO) {
-                if (ret.shopSimpleVO.name) {
-                    this.shopInfo = ret.shopSimpleVO
+            var reg = /^\w+\(({[^()]+})\)$/
+            var matches = result.match(reg)
+            if(matches){
+                const ret = JSON.parse(matches[1])
+                // matches[0]为整个字符串
+                // matches[1]为匹配到的分组
+                if (ret.shopSimpleVO) {
+                    if (ret.shopSimpleVO.name) {
+                        this.shopInfo = ret.shopSimpleVO
+                    }
                 }
+                return ret.shopSimpleVO
             }
-            return ret.shopSimpleVO
+            return result
+        } catch (e) {
+            return {}
         }
-        return result
+    }
+
+    async getOrderDetail(orderId) {
+        try {
+            const res = await fetch(`https://neworder.shop.jd.com/order/orderDetail?orderId=${orderId}`, {
+                "headers": {
+                    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                    "cache-control": "no-cache",
+                    "pragma": "no-cache",
+                    "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+                    "sec-ch-ua-mobile": "?0",
+                    "sec-ch-ua-platform": "\"macOS\"",
+                    "sec-fetch-dest": "document",
+                    "sec-fetch-mode": "navigate",
+                    "sec-fetch-site": "same-site",
+                    "sec-fetch-user": "?1",
+                    "upgrade-insecure-requests": "1",
+                    "cookies": this.JDCookies,
+                    // "cookie": "__jdv=56585130|direct|-|none|-|1703600265575; __jdu=17036002655721718781778; 3AB9D23F7A4B3CSS=jdd03OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLUAAAAMMWCNULEAAAAAACOUKVNVUZZMDCUX; areaId=15; ipLoc-djd=15-1213-0-0; PCSYCityID=CN_330000_330100_0; language=zh_CN; smb_track=02DE91E68A90440681C0768B8C50A8BD; __USE_NEW_PAGEFRAME__=false; __USE_NEW_PAGEFRAME_VERSION__=v9; chat.jd.com=20170206; pinId=0KP1G7s94DvJgNbIL3GMMg; pin=chaojie123cba; flash=2_WwND1-2U3YmZPYtd0E8mjfXBlx0Vg-YOe-CRdE8JnSEFqQ__A0kAq8-AuiZs83SI4YC4wiOUeNwGL4-vGafUyvVoM-P9K6vwsJ6vqtPd4s5*; unick=chaojie123cba; TrackID=13j-UcmSCVbez0BTynxOwH8X5p7betU6g23F95HYSr58nMFHSndrROOBQlN9rAkhM; ceshi3.com=000; _tp=Q3FSFtyD7FxyycX8ItQ1bA%3D%3D; thor=93FDA29B995A736AF476C3F3AC591BD32AF17612EC7FF984F9C27C5DECF2F488A3B643551841BEA1FBF9C5A52C2D262FD07E6252E83AC54C3592A8974D797D87BCCE1301D604484216D878CE4A8FECA6855429372741CCC37CB97BBCFA4EAD9EE4B25530D4FB50765F98D7D9385F9FF0C7A5596125D9062810853A20B8716CA8C163BFC43B7FE1A2F18F0FD2D87E86E6; _pst=chaojie123cba; _vender_=TNK3O6PALVQGH5ODXNPNG5HY7LEDNG5YAJGTU656HUFHJHL5SD2U63Q5RT6R2G3C55MKY5AWNVJF76BKARFB3ZAVGEXA5236RRQGSDOD2JMS62JXOWFNNDJ7EQS5NOGAKOXIMSVFZKPXQKDVUCWMYKS7CHKXNRBLHPI43M6V7YP2SC4RQRZT4SD6QWNUT5JXJYQMBTNIZIILXYYY2IM6F4YKZ57H7AQYKCEUR7VI3HQMHZSSHJ7QSZ4Z3GIOQQEIHZNX4BZQ7W244ZAYLAW7T2BAXVZ2ZZNDCTUEPTURCYAEM2D7XTRX4SYWXOI6NMRAHSNU57DW3IYEMPLYPTGN3RVTTACWDVX54BZ2X6ACFCBTFZKSRPB224EYBQTYNNHCEY4IQXGLDA3FUBE7EW2XDESAZ6JGI2TB3WPNQWTPS3YU4KGQYQSWZZX3U4GXD3M7JHHNWOPEQVT5GUSQO67RXUTBDQBGITG4RF4WVI33BBMVTQISM43BVK7IEHD6SHCXDTG2FE3KRTJWXDXQTIWMCCYW2C6PVLYJX2D5T55QBOXE4AY2M3O3TWCVBKYU3RA47QPSRRLJXT4CRRKF7S44UVMPZ7N3ERSBS3HPSACOW2JKH4BCUBG6HZVDCEX4QKDZGBD6M77N4GF7RVXLUSYLJSY4SFNSRF5QVY26KHLVQYDAN6I6LKA55YLEKXA4I34S; b-sec=VVCFY6DARKDGCPUIK4NBMFBHJZT3SOGRQH5THX3F4VDUBZDWDRWY7TMNQN7X7NMZ; shshshfpb=AAtGeY86MEpILfXnDP1RQdOco4vsSWBcDNClSWQAAAAA; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC4Z5CRLK5VT4DM4VBYYAICQITNQTCNE6YVKRXISVCUQWJ3F54LXISUVH46IGQS4XX2SG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD5RHBB4O3QU4OSWDXWLUPI6V33M5R7ZRO3CPUX7ZTHMF5OW4GTXSZ25F7SNG6QGSVVLLH6RCWLTI3MN7FRWSCISIZTBNT2LHU6H52J3V5VIZNDCOIP6WG2YAIELLNZNMASCK2XFRV3V3UEAJTIRVXNTBFXBQ; _BELONG_CLIENT_=WPSC4XJXWK5USS4JNZY2X7VRLR5MCBKRSVHEXABGTHDGISIQK5YOLZUXYE7IOIM7MOKO74H6CRN6WHAAR4TMDV3XZWMXZRCRT5XRNE3V356BTOB2Y7LPK66VWQK6HPTGWVXIDXDCPVE3W5WMHAIO6AT2LX2XXVNUCXR34ZWFK6HY45CORGIKOSYDYZBF27WOKTUX6BS4FZMIJWNUX6CB4JAA25ZLF7ZEKYOO4QV5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BMTUJZACIBHXQFAVLRF76VQY5PNJGGJNBEZHSFYYJA3YORRT7FB5AHCOIFQKF3W5RWNUX6CB4JAA26JNMO7AYWNUPZF5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BWZDKMOJ5BS6II53ERY6ALV3ZWPF42L4CPUHEGPYIII35KDC4FCNVCORCXFD6IVNLBEDPB2GGP4UHWNRUDOQBDIW7RZJXBA2WV5ANZOTEGUCDWYRVQS2YUTIZNZ276PRYG4N56V6YTII7MBKBC7LYHO7C555HTSBXGNRM3E466AYN67DHWVM5HQFJ4NFDO5BSDDYIA6TFMXVYLRPAFUXG4NHWDA; _vender_new_=GI63BGTJFDBQ5RB3M2OPP4RQOR7WQT7FL74543GBP5ZT234S3YC4EOR55KVOGWLALCLMZKGX3YNMDYQCA5LUPN34AMBNL6EBMUF7ST24ZF5YF6HUV5CEIE74GHGV2IKAFTZZMFHXFDGDGYGEMOCATRNMRKC5EXHA3LCBI4RFQNXJKAKUEWPNCOOLKSJ2GKUHBY7GQ5A3SQLCR4Z2FILXUEU4HCKFQNC66F6QTEXWXGFQBTEBEE2GJEQL6L3KWSIN33THD2ZFEUSMXWQ3KMHRTYNESRKFPOR42WQALLSYDRFE473J34KXCY2EFB22FYMQYR6ORFMDSJCFDDZYP777O5DJ4MCOH6557AEZYZWEPTUJLA4SIRIY6OD7773XI2PD3CLH4ERXIPHOYJZZGEHRW37ZW4QOGUXRWHJEFGFL4LKXHR5UW3TAXZO3VXEQXFLVNE3NSPYQ4FSQPA3ILE45O7DOJN5DWK42FW2XZG5MFVW5W5C6AB4G3BAF77KAJOBXTHBLFMBZDOOXF6OPH346RQDCKHWPV5PMVTHXCQA3M2IYA3EP72BCIYJ2CT4FMIG3YER2UYGBXAVGDBWVY3WJPFPDYXCHZ2EVQOJEIUMPHB77753UNHRYEHSJIANFXEK3; 3AB9D23F7A4B3C9B=OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLU; __jda=34491710.17036002655721718781778.1703600266.1704269215.1704274807.32; __jdb=34491710.5.17036002655721718781778|32.1704274807; __jdc=34491710",
+                    "Referer": "https://porder.shop.jd.com/",
+                    "Referrer-Policy": "strict-origin-when-cross-origin"
+                },
+                "body": null,
+                "method": "GET"
+            }).then(d => d.text());
+
+            return res;
+        } catch (e) {
+            console.log(e)
+        }
     }
 
    async checkLogin() {
@@ -648,7 +711,7 @@ export class JDService {
                     "tag": "plain_text",
                     "content": `监测暂停订单-备案修改通知- ${shopName}`
                 },
-                "template": "red"
+                "template": "green"
             },
             "elements": [
                 {
@@ -671,7 +734,7 @@ export class JDService {
                     "tag": "div",
                     "text": {
                         "tag": "lark_md",
-                        "content": "**订单商品&skuId** "
+                        "content": "**订单信息** "
                     },
                     "fields": [
                         {
@@ -685,8 +748,53 @@ export class JDService {
                             "is_short": false,
                             "text": {
                                 "tag": "lark_md",
-                                "content": `商品sku名称: ${info1.skuName} 订单号: ${info1.orderId}; 付款时间: ${info1.paymentConfirmTime}; 主备案商品名称${info1.goodsName}; 主备案skuId: ${info1.skuId}`
+                                "content": `商品sku名称: ${info1.skuName} 订单号: ${info1.orderId}; 付款时间: ${info1.paymentConfirmTime}`
                             }
+                        }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**主备案信息** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": ''
+                            }
+                        },
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `主备案商品名称${info1.goodsName}; 主备案skuId: ${info1.skuId}`
+                            }
+                        }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**主备案详情链接** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": ''
+                            }
+                        },
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `https://shop-hk.jd.com/popRecording/recorded/queryById.html?id=${info1.id}&disabled=true&recorded=true`}
                         }
                     ]
                 },
@@ -734,7 +842,7 @@ export class JDService {
     }
 
     async jumpSendFeiShu(info1, type) {
-        const now = dayjs().format('YYYY-MM-DD hh:mm:ss') // '25/01/2019'
+        const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
         const shopName = this.shopInfo.name
 
         let card = {
@@ -743,7 +851,7 @@ export class JDService {
                     "tag": "plain_text",
                     "content": `监测暂停订单-备案修改通知-${shopName}`
                 },
-                "template": "red"
+                "template": "green"
             },
             "elements": [
                 {
@@ -766,7 +874,7 @@ export class JDService {
                     "tag": "div",
                     "text": {
                         "tag": "lark_md",
-                        "content": "**订单信息&skuId** "
+                        "content": "**订单信息** "
                     },
                     "fields": [
                         {
@@ -780,9 +888,53 @@ export class JDService {
                             "is_short": false,
                             "text": {
                                 "tag": "lark_md",
-                                "content": `商品sku名称${info1.skuName} 订单号: ${info1.orderId};
-                                 付款时间: ${info1.paymentConfirmTime}; 主备案商品名称${info1.goodsName}; 主备案skuId: ${info1.skuId}`
+                                "content": `商品sku名称: ${info1.skuName} 订单号: ${info1.orderId}; 付款时间: ${info1.paymentConfirmTime}`
                             }
+                        }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**主备案信息** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": ''
+                            }
+                        },
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `主备案商品名称${info1.goodsName}; 主备案skuId: ${info1.skuId}`
+                            }
+                        }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**主备案详情链接** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": ''
+                            }
+                        },
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `https://shop-hk.jd.com/popRecording/recorded/queryById.html?id=${info1.id}&disabled=true&recorded=true`}
                         }
                     ]
                 },
@@ -925,17 +1077,10 @@ export class JDService {
         await rp(options);
     }
 
-    async logoutNotify(data) {
-        if (!this.fistErrorTime) {
-            this.fistErrorTime = Date.now()
+    async eidtBeianFail(data, type) {
+        if(data.errorMsg.includes('并发')) {
+            return
         }
-        if (this.lastErrorNotifyTime) {
-            const diffTime = dayjs(dayjs()).diff(this.lastErrorNotifyTime, 'minutes')
-            if (diffTime < 5) {
-                return ''
-            }
-        }
-
         const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
 
         const shopName = this.shopInfo.name
@@ -943,7 +1088,222 @@ export class JDService {
             "header": {
                 "title": {
                     "tag": "plain_text",
-                    "content": `京东接口访问异常通知-线程${this.thread}-${shopName}`
+                    "content": `备案修改失败通知-线程${this.thread}-${shopName}`
+                },
+                "template": "red"
+            },
+            "elements": [
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": `京东接口返回值`
+                    }
+                },
+                {
+                    "tag": "note",
+                    "elements": [
+                        {
+                            "tag": "plain_text",
+                            "content": `${type}-${JSON.stringify(data)}`
+                        }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**当前时间** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": ''
+                            }
+                        },
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `${now}`
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+        const webhook = this.errorNotifyUrl;
+
+        const options = {
+            method: 'POST',
+            url: webhook,
+            json: true,
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            dataType: 'json',
+            body: {
+                msg_type: 'interactive',
+                card
+            }
+        };
+        const result = await rp(options);
+        this.lastErrorNotifyTime = Date.now()
+        console.log(result)
+    }
+
+    async reTrySuccess(info1, type) {
+        const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
+        const shopName = this.shopInfo.name
+
+        let card = {
+            "header": {
+                "title": {
+                    "tag": "plain_text",
+                    "content": `备案修改失败重试修改成功通知-${shopName}`
+                },
+                "template": "green"
+            },
+            "elements": [
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**订单信息** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": ''
+                            }
+                        },
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `商品sku名称: ${info1.skuName} 订单号: ${info1.orderId}; 付款时间: ${info1.paymentConfirmTime}`
+                            }
+                        }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**主备案信息** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": ''
+                            }
+                        },
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `主备案商品名称${info1.goodsName}; 主备案skuId: ${info1.skuId}`
+                            }
+                        }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**主备案详情链接** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": ''
+                            }
+                        },
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `https://shop-hk.jd.com/popRecording/recorded/queryById.html?id=${info1.id}&disabled=true&recorded=true`}
+                        }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**目前备案状态已改为** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": ''
+                            }
+                        },
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `${type?"是": '否'} - ${now}`
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e1ae178-a3cb-4ea9-b3f2-29d650c14731';
+
+        const options = {
+            method: 'POST',
+            url: webhook,
+            json: true,
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            dataType: 'json',
+            body: {
+                msg_type: 'interactive',
+                card
+            }
+        };
+        await rp(options);
+    }
+
+
+    async logoutNotify(data) {
+        if (this.die > 2) {
+            return
+        }
+        if (!this.fistErrorTime) {
+            this.fistErrorTime = Date.now()
+        }
+        if (this.lastErrorNotifyTime) {
+            const diffTime = dayjs(dayjs()).diff(this.lastErrorNotifyTime, 'minutes')
+            if (diffTime < 10) {
+                return ''
+            }
+        }
+
+        const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
+
+        const shopName = this.shopInfo.name
+        if (!shopName) {
+            return
+        }
+        let card = {
+            "header": {
+                "title": {
+                    "tag": "plain_text",
+                    "content": `京东商家后台登录过期-线程${this.thread}-${shopName}`
                 },
                 "template": "red"
             },
@@ -1006,7 +1366,99 @@ export class JDService {
         };
        const result = await rp(options);
        this.lastErrorNotifyTime = Date.now()
-       console.log(result)
+        this.die = this.die + 1
+        console.log(result)
+    }
+
+    // 重新登录通知
+    async reLoginNotify(data) {
+        if (this.die > 0) {
+            return
+        }
+        if (!this.fistErrorTime) {
+            this.fistErrorTime = Date.now()
+        }
+        if (this.lastErrorNotifyTime) {
+            const diffTime = dayjs(dayjs()).diff(this.lastErrorNotifyTime, 'minutes')
+            if (diffTime < 5) {
+                return ''
+            }
+        }
+
+        const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
+
+        const shopName = this.shopInfo.name
+        if (!shopName) {
+            return
+        }
+        let card = {
+            "header": {
+                "title": {
+                    "tag": "plain_text",
+                    "content": `京东商家后台登录过期-线程${this.thread}-${shopName}`
+                },
+                "template": "red"
+            },
+            "elements": [
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": `京东接口返回值`
+                    }
+                },
+                {
+                    "tag": "note",
+                    "elements": [
+                        {
+                            "tag": "plain_text",
+                            "content": `${JSON.stringify(data)}`
+                        }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**当前时间** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": ''
+                            }
+                        },
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `${now}`
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+        const webhook = this.errorNotifyUrl;
+
+        const options = {
+            method: 'POST',
+            url: webhook,
+            json: true,
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            dataType: 'json',
+            body: {
+                msg_type: 'interactive',
+                card
+            }
+        };
+        const result = await rp(options);
+        this.lastErrorNotifyTime = Date.now()
+        console.log(result)
     }
 }
 
@@ -1021,17 +1473,22 @@ export class JDMainService {
 
     _hash = {}
 
-    shopNameHash = {}
+    shopNameHash = {
+
+    }
 
     errorHash = {}
 
     @Inject()
     jdService: JDService;
 
-    init() {
+    async init() {
         const stringData = fs.readFileSync('data.json', 'utf-8');
         const data = JSON.parse(stringData);
+
+        const promiseList = []
         Object.keys(data).forEach(async (item: string) => {
+            if(!data[item]) return
             if (!this._hash[item]) {
                 if (data[item]) {
                     this._hash[item] = new JDService(data[item])
@@ -1039,25 +1496,138 @@ export class JDMainService {
                     this._hash[item].thread = item
                 }
             } else {
+                if (!this._hash[item]) return
                 this._hash[item].JDCookies = data[item].cookies
-                console.log('更新jd cookies成功')
-                const isLogin = await this._hash[item].getShopInfo();
-                // console.log(isLogin)
-                if(!isLogin.name) {
-                    const diffTime = dayjs(dayjs()).diff(this._hash[item].fistErrorTime, 'minutes')
-                    if(diffTime > 30) {
-                        this._hash[item] = {}
-                    }
-                    console.log(`线程${item}, 访问京东接口异常`)
-                } else {
-                    this._hash[item].fistErrorTime = null
-                }
-            }
-            if (!this.shopNameHash[item]) {
-                this.shopNameHash[item] = {
-
-                }
+                this.checkShop(item)
             }
         })
+
+        // const stringData = fs.readFileSync('data.json', 'utf-8');
+        const datas = JSON.parse(fs.readFileSync('data.json', 'utf-8'));
+        Object.values(this._hash).forEach(jdService => {
+            if (this._hash[jdService.thread]) {
+
+                if (this._hash[jdService.thread].fistErrorTime) {
+                    datas[jdService.thread] = null
+                    if (!this._hash[jdService.thread].die) {
+                        this._hash[jdService.thread].die = 1
+                    }
+                } else {
+                    // this._hash[jdService.thread].die = 0
+                }
+
+                // const shopName = this._hash[jdService.thread].shopInfo.name
+                // if (shopName) {
+                //     if(!this.shopNameHash[shopName]) {
+                //         if (!this._hash[jdService.thread].fistErrorTime) {
+                //             this.shopNameHash[shopName] = jdService.thread
+                //         }
+                //     } else {
+                //         if (this._hash[jdService.thread].fistErrorTime) {
+                //             delete this.shopNameHash[shopName]
+                //         }
+                //     }
+                // }
+
+            }
+        })
+        fs.writeFileSync('data.json', JSON.stringify(datas))
+    }
+
+
+
+    async checkShop(item) {
+        console.log('更新jd cookies成功')
+        const isLogin = await this._hash[item].getShopInfo();
+        if(!isLogin.name) {
+            const diffTime = dayjs(dayjs()).diff(this._hash[item].fistErrorTime, 'minutes')
+            if(diffTime > 10) {
+            }
+            console.log(`线程${item}, ${this._hash[item].shopInfo.name}访问京东接口异常`)
+        } else {
+            if (this._hash[item].die) {
+                await this.reLoginNotify(this._hash[item])
+            }
+            this._hash[item].fistErrorTime = null
+            this._hash[item].die = 0
+        }
+    }
+
+    // 重新登录通知
+    async reLoginNotify(currentJdService) {
+
+        const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
+
+        const shopName = currentJdService.shopInfo.name;
+        if (!shopName) {
+            return
+        }
+        let card = {
+            "header": {
+                "title": {
+                    "tag": "plain_text",
+                    "content": `京东商家后台已恢复登录通知-线程${currentJdService.thread}-${shopName}`
+                },
+                "template": "green"
+            },
+            "elements": [
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": `上次过期时间`
+                    }
+                },
+                {
+                    "tag": "note",
+                    "elements": [
+                        {
+                            "tag": "plain_text",
+                            "content": `${dayjs(currentJdService.lastErrorNotifyTime).format('YYYY-MM-DD HH:mm:ss')}`
+                        }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**当前时间** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": ''
+                            }
+                        },
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `${now}`
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+        const webhook = currentJdService.errorNotifyUrl;
+
+        const options = {
+            method: 'POST',
+            url: webhook,
+            json: true,
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            dataType: 'json',
+            body: {
+                msg_type: 'interactive',
+                card
+            }
+        };
+        const result = await rp(options);
+        console.log(result)
     }
 }
