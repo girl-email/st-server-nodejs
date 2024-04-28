@@ -29,9 +29,9 @@ function  fetch(url, options, timeout = 60000) {
 export class JDService {
     constructor(cookies) {
         // this.JDCookies = cookies
-        // setTimeout(() => {
+        setTimeout(() => {
             this.init()
-        // },2000)
+        },2000)
 
         setInterval(() => {
             this.getShopInfo()
@@ -80,7 +80,11 @@ export class JDService {
         this.getShopInfo()
 
         setInterval(() => {
-            this.changeTenOrder()
+            try {
+                this.changeTenOrder()
+            } catch (e) {
+
+            }
         }, 1000 * 60 * 10)
     }
     // 获取暂停的订单列表
@@ -205,12 +209,12 @@ export class JDService {
                 res,
             }
         } catch (e) {
-            this.stopListBak = lastBakList;
-            this.stopList = lastList;
-            this.logger.info(e, 'error, stop Order catch')
             setTimeout(() => {
                 this.getStopOrderList()
             },7000)
+            this.stopListBak = lastBakList;
+            this.stopList = lastList;
+            this.logger.info(e, 'error, stop Order catch')
         }
     }
 
@@ -223,13 +227,13 @@ export class JDService {
             if (item.orderStatus === -4) {
                 continue;
             }
-            if(remarkMap[item.orderId]) {
-                // 身份证不匹配跳过
-                if (remarkMap[item.orderId].remark === '身份证信息不一致') {
-                    this.logger.info(item.orderId, remarkMap[item.orderId].remark)
-                    continue;
-                }
-            }
+            // if(remarkMap[item.orderId]) {
+            //     // 身份证不匹配跳过
+            //     if (remarkMap[item.orderId].remark === '身份证信息不一致') {
+            //         this.logger.info(item.orderId, remarkMap[item.orderId].remark)
+            //         continue;
+            //     }
+            // }
 
             for (const order of orderItems) {
                 const skuId = order.skuId
@@ -555,7 +559,7 @@ export class JDService {
             "headers": {
                 "accept": "*/*",
                 "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
-                "content-type": "apsuccessplication/x-www-form-urlencoded; charset=UTF-8",
+                "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
                 "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
                 "sec-ch-ua-mobile": "?0",
                 "sec-ch-ua-platform": "\"macOS\"",
