@@ -4,7 +4,7 @@ import {App, Inject} from '@midwayjs/decorator';
 import { Provide} from '@midwayjs/core';
 // import { ILogger } from '@midwayjs/logger';
 const rp = require('request-promise');
-
+const schedule = require('node-schedule');
 // @ts-ignore
 import Youdao from '@opentranslate/youdao'
 // @ts-ignore
@@ -29,9 +29,9 @@ function  fetch(url, options, timeout = 60000) {
 export class JDService {
     constructor(cookies) {
         // this.JDCookies = cookies
-        setTimeout(() => {
+        // setTimeout(() => {
             this.init()
-        },2000)
+        // },2000)
 
         setInterval(() => {
             this.getShopInfo()
@@ -42,55 +42,51 @@ export class JDService {
 
     @App()
     app: koa.Application;
-
     // @Logger()
     // logger: ILogger;
     thread = null
 
-
     shopInfo = {}
 
-
     lastErrorNotifyTime: number
-
-
 
     fistErrorTime: number
 
     die = false
 
-
     private errorNotifyUrl = 'https://open.feishu.cn/open-apis/bot/v2/hook/79e4aded-fdf2-411c-ac25-0156e975a072'
 
     logger = {
-        info: console.log
+        info: function (...args) {
+            console.log( dayjs().format('YYYY-MM-DD HH:mm:ss'),'-', ...args)
+        }
     }
-
-   public JDCookies  =  "language=zh_CN; __jdv=56585130|direct|-|none|-|1703600265575; pinId=Mk_A6Nbv7MenkDneLmJDcA; unick=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; _tp=WWkrE5q1uaY3bnuvPN7mC0Jy7Qj98SqryFRfDnmAGXBfj3EZkqYEdCCNPQpAbAri; ceshi3.com=000; _pst=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; __jdu=17036002655721718781778; __USE_NEW_PAGEFRAME__=false; __USE_NEW_PAGEFRAME_VERSION__=v9; chat.jd.com=20170206; flash=2_gIf-6hV0n-3D-owJHuVRpoG10QbYhFqtf8iq_PAPhP_zARQSoNehkDTUKX2bRosNurZi5lwdeYPjJ6lyjjCj6DfYmyPcMhCrz4uSJ8Kexsq*; TrackID=1ZSq5cEcVwiknpIRBT-fNmlAXfS_Vw6wS43RS8OYzM1HL5lsU9ffdVyq7YqBUIo-a; thor=6901B38FCABE2222F893FE4DA6A41AD2E3C483C9683B39E7396B71698DCB11C14EC8CD85133AC917234988D59EE06B23F7FEF3328DD8ADAFC4EAB61C5186AE21E4701CF1263EB28EDD024710F49B0ECD72FD38E9917280EDE8E802A8F5CDEC75B3A323ADC1B43DFB4FB87AB43993FE1C74AFBCBF673834D99FD3094B90C3789565784C8BCE4E664302CF9229EC53115B; _vender_=TNK3O6PALVQGGMI642LJKJZPNN56IZEONGC7GL4VVDUXDFCCPPZQLPMTKJILMAPLE66HGX6H6FTDBCGJT2CHIQVGBEALDGQXK7G2A7QXSDNOYW6CAGCLDWEQCPKGC3KUGVRB646PDVLYUQI3BDJ566XYIWJK3BINEVNTZU4XPHS7MGPM3IRXP3KQCYUEFTMPHRWL6CUN7T6NJ73NKFWGRSQYITLV2HHO3WE5JGLOWXRT3TAPTQSGGNICGAJHKSRTNTSC54R6Q4CXGZB2XWZYYTWTKUI23OXFVXEK3PE6BHKXEXJ5ZBTE7AQ4DRO7SJ75N23E6IGHEDQCT72I5345J2I36SSU434I7P6CY7EB2AEQ7LYOCV7OPGUYC4YKELPF3MGRB5OZSQZPV5DBDCN2OVVT3WHFGAZIBXIZMBNTMAJCDBGXFURYZVWQPSCD3VDH4ZBLXMMUXPQJVVPYTHZOTYSQGOZPT3VJVDPGXA56A3LCJRUMD33LCTZXPFSMQ3XWZN2XCXEU377PYBSOJ5KDPWYFTXBCW4XVKE32CJKDJPI6QP6QVQYT5GF65B3DWLM6EW57FJQBO6Q762KFYJFVOUQ3HS27ZJL7T2BV2L72ABR2ZXET3GKM3JAUMD6LEL6M7JBTCI4GVDBYSZ7BSSE6PVI7NJIBQV5MVVI6CUJN7K7J2L4XHGOBDC35OONJCFTROGKKKV2WQVCB4JRYRBOMWGBWLI54R5PAXPC62DI; b-sec=H7A3ZVYOXG5O6CIG7HQL4J7UIHCOAOXSWXVJGQ6BOBAGYGTIVDEJSOPSWOPURFK5; _vender_new_=GI63BGTJFDBQ5VFYRAGXDIUTOUGBH4IELSA4HBAE7MB4S5HIL5QMHN2LMW7LKWD43YCKHJGXPJWTPRAEQ2QTFLJHKJUFHCXGGYIHCD7WSWY4PLU54NT3HGWB4MCDSKE4VJSCWBCJJ3C6Z2VI46TWP7ZJBWNTMPWIQ77NXK4VVKW6ABLW3LCTHZEYXQSC5L6SULQYZLAOLYQIKX2KPA4NEI5RHY4F2FAXI5CPTHP6BXFL757MRIFGERH2CQC2D3RAAFDYIVNI7B7NTLXWX5NEUT7IONYJQA2GVEUHKGHLAXO2JD6UI7C57LRQ4MAILLWECXYYZ2YLJ5HVL6HMAVKWPNRUQV7VQ4TJYKV2GUWP66XJIZDXBYZKDAO54T5BBWUA7DONKSVFDJCTNT7XV2KGI5YOGKQYDXPE7IINVADYCCF5H6RHZCCNDAPJ5WDJVY2XHWD7VVNICVT7PTKMSBW33L3BBSATV65XAXG72Z3QJ45MXA6IP2XQELXE7F47VC57UTM3EBWFRS7SWZCFQ5TPOT46JIQ6PNSYVA4453VSW4EAUWK6FRG3WAOQPSHG6BYFS7IG5ZCONS7EQAHSIUWPVDMBEDVBVCXW7ZSOG2U73QD4GGSJJ64QEOMY6A6GSGUVQ3LK46TGOU55INQYNJ63G3NK4M; universityLanguage=zh_CN; xue_userTypeCookieName50b60fba08fddfff319d0b5acc9d6eee=\"{\\\"1\\\":\\\"POP\\\"}\"; xue_userTypePageCookieName50b60fba08fddfff319d0b5acc9d6eee=1; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC675CBWSP3REU42YTAQTNJUDXURTCNE6YVKRXISUFXTDU7V3U7QL2S3GKYL2ZCNGXSSG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD46QKR5DC3ZOXYJJSMQ7LPFV7Q42XNFW3B6USLKSP4DOKX736ZCQKMJCPUFAFUHXCAGBCJZTXPG55TUBDTGHQHRURVFNRRRQCPZ7EBOWHANCWVFJHFVSTEQXZ6XDSAY7EABH3APEXJ2C7MDIZP2K6O4UWVEXBLKE677BPFI2A; __jda=191429163.17036002655721718781778.1703600266.1703729497.1703749795.11; __jdc=191429163; _BELONG_CLIENT_=WPSC4XJXWK5USS4JNZY2X7VRLR5MCBKRSVHEXABGTHDGISIQK5YOLZUXYE7IOIM7MOKO74H6CRN6WHAAR4TMDV3XZWMXZRCRT5XRNE3V356BTOB2Y7LPK66VWQK6HPTGWVXIDXDCPVE3W5WMHAIO6AT2LX2XXVNUCXR34ZWFK6HY45CORGIKOSYDYZBF27WOKTUX6BS4FZMIJWNUX6CB4JAA25ZLF7ZEKYOO4QV5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BMTUJZACIBHXQFAVLRF76VQY5PNJGGJNBEZHSFYYJA3YORRT7FB5AHCOIFQKF3W5RWNUX6CB4JAA26JNMO7AYWNUPZF5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BWZDKMOJ5BS6II53ERY6ALV3ZWPF42L4CPUHEGPYIII35KDC4FCNVCORCXFD6IVNLBEDPB2GGP4UHWNRUDOQBDIW7RZJXBA2WV5ANZOTEGUCDWYRVQS2YUTIZNZ276PRYG4N56V6YTII7MBKBC7LYHO7C555HTSBXGNRM3E466AYN67DHWVM5HQFJ4NFDO5BSMLEHDIVX2QBZKIZSDNVQVV6ZDQ; __jdb=191429163.18.17036002655721718781778|11.1703749795; 3AB9D23F7A4B3C9B=OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLU"
-
-    // public JDCookies =  "";
-
+    // JD用户登录凭证
+    public JDCookies  =  "language=zh_CN; __jdv=56585130|direct|-|none|-|1703600265575; pinId=Mk_A6Nbv7MenkDneLmJDcA; unick=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; _tp=WWkrE5q1uaY3bnuvPN7mC0Jy7Qj98SqryFRfDnmAGXBfj3EZkqYEdCCNPQpAbAri; ceshi3.com=000; _pst=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; __jdu=17036002655721718781778; __USE_NEW_PAGEFRAME__=false; __USE_NEW_PAGEFRAME_VERSION__=v9; chat.jd.com=20170206; flash=2_gIf-6hV0n-3D-owJHuVRpoG10QbYhFqtf8iq_PAPhP_zARQSoNehkDTUKX2bRosNurZi5lwdeYPjJ6lyjjCj6DfYmyPcMhCrz4uSJ8Kexsq*; TrackID=1ZSq5cEcVwiknpIRBT-fNmlAXfS_Vw6wS43RS8OYzM1HL5lsU9ffdVyq7YqBUIo-a; thor=6901B38FCABE2222F893FE4DA6A41AD2E3C483C9683B39E7396B71698DCB11C14EC8CD85133AC917234988D59EE06B23F7FEF3328DD8ADAFC4EAB61C5186AE21E4701CF1263EB28EDD024710F49B0ECD72FD38E9917280EDE8E802A8F5CDEC75B3A323ADC1B43DFB4FB87AB43993FE1C74AFBCBF673834D99FD3094B90C3789565784C8BCE4E664302CF9229EC53115B; _vender_=TNK3O6PALVQGGMI642LJKJZPNN56IZEONGC7GL4VVDUXDFCCPPZQLPMTKJILMAPLE66HGX6H6FTDBCGJT2CHIQVGBEALDGQXK7G2A7QXSDNOYW6CAGCLDWEQCPKGC3KUGVRB646PDVLYUQI3BDJ566XYIWJK3BINEVNTZU4XPHS7MGPM3IRXP3KQCYUEFTMPHRWL6CUN7T6NJ73NKFWGRSQYITLV2HHO3WE5JGLOWXRT3TAPTQSGGNICGAJHKSRTNTSC54R6Q4CXGZB2XWZYYTWTKUI23OXFVXEK3PE6BHKXEXJ5ZBTE7AQ4DRO7SJ75N23E6IGHEDQCT72I5345J2I36SSU434I7P6CY7EB2AEQ7LYOCV7OPGUYC4YKELPF3MGRB5OZSQZPV5DBDCN2OVVT3WHFGAZIBXIZMBNTMAJCDBGXFURYZVWQPSCD3VDH4ZBLXMMUXPQJVVPYTHZOTYSQGOZPT3VJVDPGXA56A3LCJRUMD33LCTZXPFSMQ3XWZN2XCXEU377PYBSOJ5KDPWYFTXBCW4XVKE32CJKDJPI6QP6QVQYT5GF65B3DWLM6EW57FJQBO6Q762KFYJFVOUQ3HS27ZJL7T2BV2L72ABR2ZXET3GKM3JAUMD6LEL6M7JBTCI4GVDBYSZ7BSSE6PVI7NJIBQV5MVVI6CUJN7K7J2L4XHGOBDC35OONJCFTROGKKKV2WQVCB4JRYRBOMWGBWLI54R5PAXPC62DI; b-sec=H7A3ZVYOXG5O6CIG7HQL4J7UIHCOAOXSWXVJGQ6BOBAGYGTIVDEJSOPSWOPURFK5; _vender_new_=GI63BGTJFDBQ5VFYRAGXDIUTOUGBH4IELSA4HBAE7MB4S5HIL5QMHN2LMW7LKWD43YCKHJGXPJWTPRAEQ2QTFLJHKJUFHCXGGYIHCD7WSWY4PLU54NT3HGWB4MCDSKE4VJSCWBCJJ3C6Z2VI46TWP7ZJBWNTMPWIQ77NXK4VVKW6ABLW3LCTHZEYXQSC5L6SULQYZLAOLYQIKX2KPA4NEI5RHY4F2FAXI5CPTHP6BXFL757MRIFGERH2CQC2D3RAAFDYIVNI7B7NTLXWX5NEUT7IONYJQA2GVEUHKGHLAXO2JD6UI7C57LRQ4MAILLWECXYYZ2YLJ5HVL6HMAVKWPNRUQV7VQ4TJYKV2GUWP66XJIZDXBYZKDAO54T5BBWUA7DONKSVFDJCTNT7XV2KGI5YOGKQYDXPE7IINVADYCCF5H6RHZCCNDAPJ5WDJVY2XHWD7VVNICVT7PTKMSBW33L3BBSATV65XAXG72Z3QJ45MXA6IP2XQELXE7F47VC57UTM3EBWFRS7SWZCFQ5TPOT46JIQ6PNSYVA4453VSW4EAUWK6FRG3WAOQPSHG6BYFS7IG5ZCONS7EQAHSIUWPVDMBEDVBVCXW7ZSOG2U73QD4GGSJJ64QEOMY6A6GSGUVQ3LK46TGOU55INQYNJ63G3NK4M; universityLanguage=zh_CN; xue_userTypeCookieName50b60fba08fddfff319d0b5acc9d6eee=\"{\\\"1\\\":\\\"POP\\\"}\"; xue_userTypePageCookieName50b60fba08fddfff319d0b5acc9d6eee=1; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC675CBWSP3REU42YTAQTNJUDXURTCNE6YVKRXISUFXTDU7V3U7QL2S3GKYL2ZCNGXSSG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD46QKR5DC3ZOXYJJSMQ7LPFV7Q42XNFW3B6USLKSP4DOKX736ZCQKMJCPUFAFUHXCAGBCJZTXPG55TUBDTGHQHRURVFNRRRQCPZ7EBOWHANCWVFJHFVSTEQXZ6XDSAY7EABH3APEXJ2C7MDIZP2K6O4UWVEXBLKE677BPFI2A; __jda=191429163.17036002655721718781778.1703600266.1703729497.1703749795.11; __jdc=191429163; _BELONG_CLIENT_=WPSC4XJXWK5USS4JNZY2X7VRLR5MCBKRSVHEXABGTHDGISIQK5YOLZUXYE7IOIM7MOKO74H6CRN6WHAAR4TMDV3XZWMXZRCRT5XRNE3V356BTOB2Y7LPK66VWQK6HPTGWVXIDXDCPVE3W5WMHAIO6AT2LX2XXVNUCXR34ZWFK6HY45CORGIKOSYDYZBF27WOKTUX6BS4FZMIJWNUX6CB4JAA25ZLF7ZEKYOO4QV5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BMTUJZACIBHXQFAVLRF76VQY5PNJGGJNBEZHSFYYJA3YORRT7FB5AHCOIFQKF3W5RWNUX6CB4JAA26JNMO7AYWNUPZF5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BWZDKMOJ5BS6II53ERY6ALV3ZWPF42L4CPUHEGPYIII35KDC4FCNVCORCXFD6IVNLBEDPB2GGP4UHWNRUDOQBDIW7RZJXBA2WV5ANZOTEGUCDWYRVQS2YUTIZNZ276PRYG4N56V6YTII7MBKBC7LYHO7C555HTSBXGNRM3E466AYN67DHWVM5HQFJ4NFDO5BSMLEHDIVX2QBZKIZSDNVQVV6ZDQ; __jdb=191429163.18.17036002655721718781778|11.1703749795; 3AB9D23F7A4B3C9B=OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLU"
     private beiAnList = [];
-
+    // 暂停订单列表
     public stopList = [];
-
+    // 上一次查询的暂停订单列表
     public stopListBak = []
-
+    public orderList = []
+    // 发生错误的订单号MAP
     public errOrderMap = {}
-
     // 检查频次
     CHECK_TIME = 1000 * 30
-
     init() {
         this.logger.info('初始化');
         this.getStopOrderList()
-        //
         // this.getBeiAnList()
         this.getShopInfo()
-    }
 
+        setInterval(() => {
+            this.changeTenOrder()
+        }, 1000 * 60 * 10)
+    }
     // 获取暂停的订单列表
     async getStopOrderList() {
+        const lastBakList =  this.stopListBak;
+        const lastList =  this.stopList;
         try {
             console.log("开始新的一轮暂停订单检查")
             const res = await this.findStopOrder()
@@ -103,6 +99,7 @@ export class JDService {
             }
             this.stopListBak = [...this.stopList]
             this.stopList = res.orderList || [];
+            this.orderList = [...this.orderList, ...res.orderList]
 
             const jumpList = [];
             for (const j of this.stopListBak) {
@@ -126,20 +123,15 @@ export class JDService {
                         if (info) {
                             info.orderId = item.orderId
                             info.paymentConfirmTime = item.paymentConfirmTime
-                            try {
-                                const success = await this.updateBeiAn(info, 1)
-                                if (success) {
-                                    this.jumpSendFeiShu(
-                                        {
-                                            ...info,
-                                            skuName: order.skuName
-                                        },
-                                        1
-                                    )
-
-                                }
-                            } catch (e) {
-
+                            const success = await this.updateBeiAn(info, 1)
+                            if (success) {
+                                this.jumpSendFeiShu(
+                                    {
+                                        ...info,
+                                        skuName: order.skuName
+                                    },
+                                    1
+                                )
                             }
                         }
                     }
@@ -213,13 +205,78 @@ export class JDService {
                 res,
             }
         } catch (e) {
-            console.log(e, 'error, stop Order')
+            this.stopListBak = lastBakList;
+            this.stopList = lastList;
+            this.logger.info(e, 'error, stop Order catch')
             setTimeout(() => {
                 this.getStopOrderList()
-            },10000)
+            },7000)
         }
     }
 
+    async changeTenOrder() {
+        const uniqueData = [...new Set(this.orderList.map(JSON.stringify))].map(JSON.parse);
+        for await (const item of uniqueData) {
+            const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
+            const orderItems = item.orderItems;
+            // 异常订单不处理
+            if (item.orderStatus === -4) {
+                continue;
+            }
+            if(remarkMap[item.orderId]) {
+                // 身份证不匹配跳过
+                if (remarkMap[item.orderId].remark === '身份证信息不一致') {
+                    this.logger.info(item.orderId, remarkMap[item.orderId].remark)
+                    continue;
+                }
+            }
+
+            for (const order of orderItems) {
+                const skuId = order.skuId
+                const info = await this.queryOneBeiAnInfo(skuId)
+                if(!info) continue;
+                info.orderId = item.orderId
+                info.paymentConfirmTime = item.paymentConfirmTime
+                order.mainSkuId = info.skuId
+                if (info.type == 1) {
+                    // if (diffTime > 12) {
+                    //     continue
+                    // }
+                    // const success = await this.updateBeiAn(info, 0);
+                    // if (success) {
+                    //     this.sendFeiShu(
+                    //         {
+                    //             ...info,
+                    //             skuName: order.skuName
+                    //         }
+                    //         , 0)
+                    // }
+                    uniqueData.splice(uniqueData.findIndex(t => t.orderId === item.orderId), 1)
+                } else {
+                    const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
+                    // 超过十分钟
+                    if (diffTime >= 12 && diffTime <= 7200) {
+                        if (this.errOrderMap[item.orderId]) {
+                            continue
+                        }
+                        this.errOrderMap[item.orderId] = true
+                        this.logger.info(item.orderId, '超过十二分钟啦')
+                        const hasOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
+                        // 如果其他订单不包含此sku
+                        if (!hasOrder) {
+                            const success = await this.updateBeiAn(info, 1);
+                            if (success) {
+                                this.tenMinutesNotify(info, 1)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        this.orderList = uniqueData;
+    }
+    // 查询下一阶段订单列表
     async findStopOrder() {
         try {
             const res = await fetch("https://porder.shop.jd.com/order/orderlist", {
@@ -255,7 +312,6 @@ export class JDService {
             }
         }
     }
-
     // 获取备列表
     async getBeiAnList(page = 1) {
         try {
@@ -301,10 +357,7 @@ export class JDService {
         // })
         // console.log(res,list, '--');
     }
-    /**
-     *
-     * @param skuId
-     */
+    // 查询单个备案详情
     async queryOneBeiAnInfo(skuId) {
         try {
             const result = await fetch(`https://shop-hk.jd.com/popRecording/recorded/recordedManage.do?goodsName=&skuId=${skuId}&upc=&customId=&fromCreated=&toCreated=&ccProvider=&customModel=&sellerRecord=&page=1`, {
@@ -392,98 +445,100 @@ export class JDService {
         }
         // const now = Date.now()
     }
-    // 更新备案
+    // 更新/修改备案
     async updateBeiAn(info1, type = 1, time? = 0) {
-        let info = {
-            "id": 16193866,
-            "operationSign": 1,
-            "rejectInfo": null,
-            "operationSource": null,
-            "status": 0,
-            "statusStr": "已备案",
-            "statusPending": null,
-            "operation": 4,
-            "operationStr": null,
-            "skuId": "10084463187057",
-            "upc": "03145891741057",
-            "emgSkuId": null,
-            "taxCommitmentsway": "0",
-            "goodsName": "香奈儿（Chanel）可可小姐炫色口红coco bloom银黑细管唇膏送女友礼物",
-            "goodsNameEn": "Chanel Coco Chanel Colorful Lipstick Coco Bloom Silver Black Tubular lipstick Gifts to Girlfriend",
-            "brand": "香奈儿",
-            "brandEn": "Chanel",
-            "xingHao": "无",
-            "spe": "3g/支",
-            "unit": "支",
-            "goodsSellerPrice": "389",
-            "grossWeight": 0.004,
-            "netWeight": 0.003,
-            "actualWeight": null,
-            "volume": "",
-            "safeDays": "",
-            "salesWebSite": "",
-            "goodsPicture": "",
-            "goodsData": "",
-            "goodsAttach": "",
-            "hsCode": "3304100091",
-            "hgsbys": "0:香奈儿|1:13%|2:日用|3:盒装|4:香奈儿|5:58|6:3g/支|7:3g/支|8:3g/支",
-            "function": "无",
-            "use": "无",
-            "composition": "无",
-            "vatRate": 13,
-            "taxRate": 0,
-            "originCountry": "法国",
-            "originArea": "法国；产品批次不同，产品产地以实物为准",
-            "manufacturer": "法国；产品批次不同，产品产地以实物为准",
-            "roduceAddress": "",
-            "supplier": "",
-            "note": "",
-            "venderId": 13998334,
-            "eclpCode": "EBU4418055094368",
-            "eclpName": "INCOROYTRADELIMITED",
-            "customModel": "zhiyou",
-            "customModelName": "保税直邮",
-            "customId": "guangzhou",
-            "customName": "广州保税区",
-            "customsRegionCode": "5141",
-            "customsRegionName": null,
-            "ccProvider": "010021",
-            "venderName": "INCOROYTRADELIMITED个人护理海外专营店",
-            "ccProviderName": "VIE伟世博",
-            "phone": "",
-            "email": "1029883657@qq.com",
-            "sellerRecord": "10084463187057",
-            "customRecord": "09010290",
-            "qiRecord": "09010290",
-            "taxNumberPost": "09010290",
-            "postRate": 10,
-            "country": "305",
-            "qiCountry": "305",
-            "measurement": "012",
-            "qiMeasurement": "012",
-            "isTaxFloat": 0,
-            "legalUnit1": "035",
-            "legalAmount1": "0.00300",
-            "legalUnit2": "011",
-            "legalAmount2": "1.00000",
-            "gno": null,
-            "delivery": "中国香港",
-            "dutiablePrice": null,
-            "ext1": null,
-            "ext2": null,
-            "operator": "13998334",
-            "created": 1702006684000,
-            "modified": 1702986383000,
-            "modifiedMap": null,
-            "clearType": null,
-            "skuType": null,
-            "type": 0,
-            "mainSkuId": null,
-            "vsp": null,
-            "mfnTariff": "5",
-            "penaltyTariff": "13",
-            "isPlantPackage": null
-        }
+        let info
+        // let info = {
+        //     "id": 16193866,
+        //     "operationSign": 1,
+        //     "rejectInfo": null,
+        //     "operationSource": null,
+        //     "status": 0,
+        //     "statusStr": "已备案",
+        //     "statusPending": null,
+        //     "operation": 4,
+        //     "operationStr": null,
+        //     "skuId": "10084463187057",
+        //     "upc": "03145891741057",
+        //     "emgSkuId": null,
+        //     "taxCommitmentsway": "0",
+        //     "goodsName": "香奈儿（Chanel）可可小姐炫色口红coco bloom银黑细管唇膏送女友礼物",
+        //     "goodsNameEn": "Chanel Coco Chanel Colorful Lipstick Coco Bloom Silver Black Tubular lipstick Gifts to Girlfriend",
+        //     "brand": "香奈儿",
+        //     "brandEn": "Chanel",
+        //     "xingHao": "无",
+        //     "spe": "3g/支",
+        //     "unit": "支",
+        //     "goodsSellerPrice": "389",
+        //     "grossWeight": 0.004,
+        //     "netWeight": 0.003,
+        //     "actualWeight": null,
+        //     "volume": "",
+        //     "safeDays": "",
+        //     "salesWebSite": "",
+        //     "goodsPicture": "",
+        //     "goodsData": "",
+        //     "goodsAttach": "",
+        //     "hsCode": "3304100091",
+        //     "hgsbys": "0:香奈儿|1:13%|2:日用|3:盒装|4:香奈儿|5:58|6:3g/支|7:3g/支|8:3g/支",
+        //     "function": "无",
+        //     "use": "无",
+        //     "composition": "无",
+        //     "vatRate": 13,
+        //     "taxRate": 0,
+        //     "originCountry": "法国",
+        //     "originArea": "法国；产品批次不同，产品产地以实物为准",
+        //     "manufacturer": "法国；产品批次不同，产品产地以实物为准",
+        //     "roduceAddress": "",
+        //     "supplier": "",
+        //     "note": "",
+        //     "venderId": 13998334,
+        //     "eclpCode": "EBU4418055094368",
+        //     "eclpName": "INCOROYTRADELIMITED",
+        //     "customModel": "zhiyou",
+        //     "customModelName": "保税直邮",
+        //     "customId": "guangzhou",
+        //     "customName": "广州保税区",
+        //     "customsRegionCode": "5141",
+        //     "customsRegionName": null,
+        //     "ccProvider": "010021",
+        //     "venderName": "INCOROYTRADELIMITED个人护理海外专营店",
+        //     "ccProviderName": "VIE伟世博",
+        //     "phone": "",
+        //     "email": "1029883657@qq.com",
+        //     "sellerRecord": "10084463187057",
+        //     "customRecord": "09010290",
+        //     "qiRecord": "09010290",
+        //     "taxNumberPost": "09010290",
+        //     "postRate": 10,
+        //     "country": "305",
+        //     "qiCountry": "305",
+        //     "measurement": "012",
+        //     "qiMeasurement": "012",
+        //     "isTaxFloat": 0,
+        //     "legalUnit1": "035",
+        //     "legalAmount1": "0.00300",
+        //     "legalUnit2": "011",
+        //     "legalAmount2": "1.00000",
+        //     "gno": null,
+        //     "delivery": "中国香港",
+        //     "dutiablePrice": null,
+        //     "ext1": null,
+        //     "ext2": null,width: 64px;
+        //     height: 22px;
+        //     "operator": "13998334",
+        //     "created": 1702006684000,
+        //     "modified": 1702986383000,
+        //     "modifiedMap": null,
+        //     "clearType": null,
+        //     "skuType": null,
+        //     "type": 0,
+        //     "mainSkuId": null,
+        //     "vsp": null,
+        //     "mfnTariff": "5",
+        //     "penaltyTariff": "13",
+        //     "isPlantPackage": null
+        // }
         // "body":"goodsPicture=&goodsData=&goodsAttach=&id=16193797&customId=guangzhou&customsRegionCode=5141&ccProviderName=VIE%E4%BC%9F%E4%B8%96%E5%8D%9A&customModel=zhiyou&venderName=chaojie%E4%B8%AA%E4%BA%BA%E6%8A%A4%E7%90%86%E6%B5%B7%E5%A4%96%E4%B8%93%E8%90%A5%E5%BA%97&venderId=13942040&eclpCode=EBU4418055093551&skuId=10089822950614&type=1&taxCommitmentsway=0&upc=0697291997310924&emgSkuId=&goodsName=Lee%E7%89%9B%E4%BB%94%E8%A3%A4&goodsNameEn=lee+jeans&brand=%E6%97%A0&brandEn=Lee&xingHao=%E6%97%A0&spe=1%2F%E6%9D%A1&unit=%E6%9D%A1&goodsSellerPrice=317&grossWeight=0.04&netWeight=0.03&actualWeight=&volume=&safeDays=1359&salesWebSite=&hsCode=6203429090&hgsbys=Lee+9+%E6%9C%BA%E7%BB%87+%E9%95%BF%E8%A3%A4+%E5%A5%B3%E5%BC%8F+%E6%A3%89+Lee+0697291997310924&function=%E6%97%A0&use=%E6%97%A0&composition=%E6%97%A0&vatRate=13&taxRate=0&originCountry=%E6%B3%95%E5%9B%BD&originArea=%E6%B3%95%E5%9B%BD%EF%BC%9B%E4%BA%A7%E5%93%81%E6%89%B9%E6%AC%A1%E4%B8%8D%E5%90%8C%EF%BC%8C%E4%BA%A7%E5%93%81%E4%BA%A7%E5%9C%B0%E4%BB%A5%E5%AE%9E%E7%89%A9%E4%B8%BA%E5%87%86&manufacturer=%E6%B3%95%E5%9B%BD%EF%BC%9B%E4%BA%A7%E5%93%81%E6%89%B9%E6%AC%A1%E4%B8%8D%E5%90%8C%EF%BC%8C%E4%BA%A7%E5%93%81%E4%BA%A7%E5%9C%B0%E4%BB%A5%E5%AE%9E%E7%89%A9%E4%B8%BA%E5%87%86&roduceAddress=&supplier=&note=&mfnTariff=5&penaltyTariff=13&phone=134239015485&email=1608586943%40qq.com&eclpName=ChaojieTradeLimited&ccProvider=010021","method":"POST","mode":"cors"});fetch("https://shop-hk.jd.com/popRecording/recorded/changeRecording.do", {"credentials":"include","headers":{"accept":"*/*","accept-language":"zh-CN,zh;q=0.9","content-type":"application/x-www-form-urlencoded; charset=UTF-8","sec-fetch-mode":"cors","sec-fetch-site":"same-origin","x-requested-with":"XMLHttpRequest"},"referrer":"https://shop-hk.jd.com/popRecording/recorded/queryById.do?recorded=true&id=16193797","referrerPolicy":"no-referrer-when-downgrade","body":"goodsPicture=&goodsData=&goodsAttach=&id=16193797&customId=guangzhou&customsRegionCode=5141&ccProviderName=VIE%E4%BC%9F%E4%B8%96%E5%8D%9A&customModel=zhiyou&venderName=chaojie%E4%B8%AA%E4%BA%BA%E6%8A%A4%E7%90%86%E6%B5%B7%E5%A4%96%E4%B8%93%E8%90%A5%E5%BA%97&venderId=13942040&eclpCode=EBU4418055093551&skuId=10089822950614&type=1&taxCommitmentsway=0&upc=0697291997310924&emgSkuId=&goodsName=Lee%E7%89%9B%E4%BB%94%E8%A3%A4&goodsNameEn=lee+jeans&brand=%E6%97%A0&brandEn=Lee&xingHao=%E6%97%A0&spe=1%2F%E6%9D%A1&unit=%E6%9D%A1&goodsSellerPrice=317&grossWeight=0.04&netWeight=0.03&actualWeight=&volume=&safeDays=1359&salesWebSite=&hsCode=6203429090&hgsbys=Lee+9+%E6%9C%BA%E7%BB%87+%E9%95%BF%E8%A3%A4+%E5%A5%B3%E5%BC%8F+%E6%A3%89+Lee+0697291997310924&function=%E6%97%A0&use=%E6%97%A0&composition=%E6%97%A0&vatRate=13&taxRate=0&originCountry=%E6%B3%95%E5%9B%BD&originArea=%E6%B3%95%E5%9B%BD%EF%BC%9B%E4%BA%A7%E5%93%81%E6%89%B9%E6%AC%A1%E4%B8%8D%E5%90%8C%EF%BC%8C%E4%BA%A7%E5%93%81%E4%BA%A7%E5%9C%B0%E4%BB%A5%E5%AE%9E%E7%89%A9%E4%B8%BA%E5%87%86&manufacturer=%E6%B3%95%E5%9B%BD%EF%BC%9B%E4%BA%A7%E5%93%81%E6%89%B9%E6%AC%A1%E4%B8%8D%E5%90%8C%EF%BC%8C%E4%BA%A7%E5%93%81%E4%BA%A7%E5%9C%B0%E4%BB%A5%E5%AE%9E%E7%89%A9%E4%B8%BA%E5%87%86&roduceAddress=&supplier=&note=&mfnTariff=5&penaltyTariff=13&phone=134239015485&email=1608586943%40qq.com&eclpName=ChaojieTradeLimited&ccProvider=010021","method":"POST","mode":"cors"});
         info = {...info1}
         for (const k in info) {
@@ -500,7 +555,7 @@ export class JDService {
             "headers": {
                 "accept": "*/*",
                 "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
-                "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "content-type": "apsuccessplication/x-www-form-urlencoded; charset=UTF-8",
                 "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
                 "sec-ch-ua-mobile": "?0",
                 "sec-ch-ua-platform": "\"macOS\"",
@@ -518,7 +573,8 @@ export class JDService {
         if (res.result.success) {
             this.logger.info(`备案状态修改成功; 商品：${info1.goodsName}; skuId: ${info.skuId}`, type);
             if (time > 0) {
-                this.reTrySuccess(info1, type)
+                this.logger.info('重试修改成功， 第', time, '次修改备案', info.skuId)
+                this.reTrySuccess(info1, type, {...res.result})
             }
         } else {
             this.logger.info(`备案状态修改失败; 商品：${info1.goodsName}; skuId: ${info.skuId}`, JSON.stringify(res.result), type, this.shopInfo.name);
@@ -526,7 +582,8 @@ export class JDService {
             if (time > 0) {
                 this.logger.info(`备案状态修改失败; 商品：${info1.goodsName}; skuId: ${info.skuId}`, JSON.stringify(res.result), type, this.shopInfo.name);
             }
-            if (type === 1 && time <= 2) {
+            if (time <= 2 && !res.result.errorMsg.includes('并发')) {
+                this.logger.info('尝试第', time + 1, '次修改备案', info.skuId)
                 setTimeout(() => this.updateBeiAn(info1, type, time + 1), 5000)
             }
         }
@@ -546,7 +603,7 @@ export class JDService {
         }
         return  false
     }
-
+    // 判断暂停列表存在其他订单有当前订单sku
     stopListHasSkuOtherOrder(skuId, orderId) {
         for (const item of this.stopList.filter(item => item.orderId !== orderId)) {
             const orderItems = item.orderItems;
@@ -558,7 +615,6 @@ export class JDService {
         }
         return  false
     }
-
     // 获取订单备注
     async getOrderRemark(orderIds) {
         try {
@@ -588,7 +644,6 @@ export class JDService {
             return  {}
         }
     }
-
     // 获取店铺信息
     async getShopInfo() {
         try {
@@ -631,7 +686,7 @@ export class JDService {
             return {}
         }
     }
-
+    // 获取订单详情
     async getOrderDetail(orderId) {
         try {
             const res = await fetch(`https://neworder.shop.jd.com/order/orderDetail?orderId=${orderId}`, {
@@ -662,7 +717,7 @@ export class JDService {
             console.log(e)
         }
     }
-
+    // 检查登录
    async checkLogin() {
        try {
            const res = await fetch("https://porder.shop.jd.com/order/orderlist", {
@@ -700,7 +755,7 @@ export class JDService {
            return false
        }
     }
-
+    // 暂停里跳出新订单备案改为否通知
     async sendFeiShu(info1, type) {
         const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
         const shopName = this.shopInfo.name
@@ -840,7 +895,7 @@ export class JDService {
         };
         await rp(options);
     }
-
+    // 订单从暂停跳出备案状态改为是通知
     async jumpSendFeiShu(info1, type) {
         const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
         const shopName = this.shopInfo.name
@@ -980,7 +1035,7 @@ export class JDService {
         };
         await rp(options);
     }
-
+    // 备案超过12分钟未跳出暂停改为是通知
     async tenMinutesNotify(info1, type) {
         const now = dayjs().format('YYYY-MM-DD hh:mm:ss') // '25/01/2019'
         const shopName = this.shopInfo.name
@@ -989,7 +1044,7 @@ export class JDService {
             "header": {
                 "title": {
                     "tag": "plain_text",
-                    "content": `订单超过十二分钟未跳出暂停改为是通知-${shopName}`
+                    "content": `订单超时未跳出暂停改为是通知-${shopName}`
                 },
                 "template": "red"
             },
@@ -1006,7 +1061,7 @@ export class JDService {
                     "elements": [
                         {
                             "tag": "plain_text",
-                            "content": `订单超过十分钟未跳出暂停`
+                            "content": `订单超过10分钟未跳出暂停`
                         }
                     ]
                 },
@@ -1038,7 +1093,7 @@ export class JDService {
                     "tag": "div",
                     "text": {
                         "tag": "lark_md",
-                        "content": "**目前备案状态** "
+                        "content": "**目前备案状态已修改为** "
                     },
                     "fields": [
                         {
@@ -1074,9 +1129,9 @@ export class JDService {
                 card
             }
         };
-        await rp(options);
+        const res = await rp(options);
     }
-
+    // 备案修改失败通知
     async eidtBeianFail(data, type) {
         if(data.errorMsg.includes('并发')) {
             return
@@ -1153,8 +1208,11 @@ export class JDService {
         this.lastErrorNotifyTime = Date.now()
         console.log(result)
     }
-
-    async reTrySuccess(info1, type) {
+    // 备案重试修改成功通知
+    async reTrySuccess(info1, type, data) {
+        // if(data.errorMsg.includes('并发')) {
+        //     return
+        // }
         const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
         const shopName = this.shopInfo.name
 
@@ -1167,29 +1225,6 @@ export class JDService {
                 "template": "green"
             },
             "elements": [
-                {
-                    "tag": "div",
-                    "text": {
-                        "tag": "lark_md",
-                        "content": "**订单信息** "
-                    },
-                    "fields": [
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": ''
-                            }
-                        },
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": `商品sku名称: ${info1.skuName} 订单号: ${info1.orderId}; 付款时间: ${info1.paymentConfirmTime}`
-                            }
-                        }
-                    ]
-                },
                 {
                     "tag": "div",
                     "text": {
@@ -1260,8 +1295,7 @@ export class JDService {
                 }
             ]
         }
-        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e1ae178-a3cb-4ea9-b3f2-29d650c14731';
-
+        const webhook = this.errorNotifyUrl;
         const options = {
             method: 'POST',
             url: webhook,
@@ -1275,10 +1309,10 @@ export class JDService {
                 card
             }
         };
-        await rp(options);
+        const  res = await rp(options);
+        console.log(res, '重试群通知结果')
     }
-
-
+    // 登录过期通知
     async logoutNotify(data) {
         if (this.die > 2) {
             return
@@ -1369,7 +1403,6 @@ export class JDService {
         this.die = this.die + 1
         console.log(result)
     }
-
     // 重新登录通知
     async reLoginNotify(data) {
         if (this.die > 0) {
@@ -1469,13 +1502,18 @@ export class JDMainService {
         setInterval(() => {
             this.init()
         }, 10000)
+
+        // 每天8点到20点， 整点 发送在线店铺列表通知
+        schedule.scheduleJob('0 0 8-20 * * ?', () => {
+            this.onlineShopNotify()
+        });
+
+        setTimeout(() => this.onlineShopNotify(), 1000 * 30)
     }
 
     _hash = {}
 
-    shopNameHash = {
-
-    }
+    shopNameHash = {}
 
     errorHash = {}
 
@@ -1534,8 +1572,66 @@ export class JDMainService {
         fs.writeFileSync('data.json', JSON.stringify(datas))
     }
 
+    // 当前在线店铺
+    async onlineShopNotify() {
+        const shopList = [...new Set([...Object.values(this._hash).filter(j => !j.die).map(item => item.shopInfo.name)])]
+        const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
+        let card = {
+            "header": {
+                "title": {
+                    "tag": "plain_text",
+                    "content": `当前在线店铺列表通知`
+                },
+                "template": "green"
+            },
+            "elements": [
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**列表** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `${now}`
+                            }
+                        },
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `${shopList.join('\n')}`
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e1ae178-a3cb-4ea9-b3f2-29d650c14731';
 
+        const options = {
+            method: 'POST',
+            url: webhook,
+            json: true,
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            dataType: 'json',
+            body: {
+                msg_type: 'interactive',
+                card
+            }
+        };
+        const result = await rp(options);
+        this.lastErrorNotifyTime = Date.now()
+        this.die = this.die + 1
+        console.log(result)
+    }
 
+    // 检查店铺
     async checkShop(item) {
         console.log('更新jd cookies成功')
         const isLogin = await this._hash[item].getShopInfo();
@@ -1631,3 +1727,5 @@ export class JDMainService {
         console.log(result)
     }
 }
+
+
