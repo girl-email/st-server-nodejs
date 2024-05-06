@@ -154,9 +154,16 @@ export class JDService {
 
     // 关联主备案
     async relationMain(skuId) {
-        const skuList = await this.findAllSku(skuId)
-        skuList.forEach(item => {
-            this.relationRecord(item.skuId)
+        const {skuList, productInfo} = await this.findAllSku(skuId)
+        Promise.all(skuList.map(item => {
+            return this.relationRecord(item.skuId)
+        })).then((res) => {
+            const ok = res.some(item => item.success);
+            if (ok) {
+                const ok2 = res.every(item => item.success || item);
+                ok2 && this.sendFeiShu2(skuList, productInfo, res)
+            }
+            // this.sendFeiShu2(skuList, productInfo, res)
         })
     }
 
@@ -172,11 +179,14 @@ export class JDService {
                         this.logger.info('共享备案成功',ucpId, skuId)
                         this.ucpPool[ucpId] = this.ucpPool[ucpId] + 1;
                         this.sendFeiShu(shareInfo, skuId, ucpId)
+                        return  { success: true, mainSkuId: shareInfo.mainSkuId}
                     } else {
                         this.logger.info('共享备案失败',ucpId, skuId)
                     }
                 }
             }
+        } else {
+            return info.mainSkuId || info.skuId;
         }
         // console.log(info)
     }
@@ -238,7 +248,10 @@ export class JDService {
             "method": "POST"
         }).then(res => res.json());
         // console.log( skuData.data.skuReserveDetails);
-        return skuData.data.skuReserveDetails
+        return {
+            skuList: skuData.data.skuReserveDetails,
+            productInfo: productInfo
+        }
     }
 
     async getOneMain() {
@@ -879,7 +892,71 @@ export class JDService {
                 },
             ]
         }
-        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/355e60c4-3b74-434e-bf1e-9580a2bd7d54';
+        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/c3e5075a-7b04-4eee-9d16-3b061f3e2c09';
+
+        const options = {
+            method: 'POST',
+            url: webhook,
+            json: true,
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            dataType: 'json',
+            body: {
+                msg_type: 'interactive',
+                card
+            }
+        };
+        await rp(options);
+    }
+    async sendFeiShu2(skuList, productInfo, res) {
+        const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
+        const shopName = this.shopInfo.name
+
+        let card = {
+            "header": {
+                "title": {
+                    "tag": "plain_text",
+                    "content": `商品维度-全部sku已关联主备案通知-${shopName}`
+                },
+                "template": "green"
+            },
+            "elements": [
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "商品信息** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `productId: ${productInfo.productId}; 商品名称: ${productInfo.productName}`
+                            }
+                        }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**sku列表** "
+                    },
+                    "fields": [
+                        {
+                            "is_short": false,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `${skuList.map((item, index) => item.skuId + '->' + (res[index].mainSkuId || res[index])).join('\n')}`
+                            }
+                        }
+                    ]
+                },
+            ]
+        }
+        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/c3e5075a-7b04-4eee-9d16-3b061f3e2c09';
 
         const options = {
             method: 'POST',
