@@ -71,12 +71,15 @@ export class JDService {
     public orderList = []
     // 发生错误的订单号MAP
     public errOrderMap = {}
+
+    public ucpPool = {};
+
     // 检查频次
     CHECK_TIME = 1000 * 30
     init() {
         this.logger.info('初始化');
         this.getStopOrderList()
-        // this.getBeiAnList()
+        this.getBeiAnList()
         this.getShopInfo()
 
         setInterval(() => {
@@ -105,42 +108,6 @@ export class JDService {
             this.stopList = res.orderList || [];
             this.orderList = [...this.orderList, ...res.orderList]
 
-            const jumpList = [];
-            for (const j of this.stopListBak) {
-                const order = this.stopList.find(item => item.orderId == j.orderId)
-                if (!order) {
-                    jumpList.push(j)
-                }
-            }
-            // 需要变更状态的订单列表
-            if (jumpList.length > 0) {
-                console.log('DIFF订单, 需要变更状态')
-                for (const item of jumpList) {
-                    const orderItems = item.orderItems;
-                    for (const order of orderItems) {
-                        const skuId = order.skuId
-                        const hasOtherOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
-                        if (hasOtherOrder) {
-                            continue;
-                        }
-                        const info = await this.queryOneBeiAnInfo(skuId)
-                        if (info) {
-                            info.orderId = item.orderId
-                            info.paymentConfirmTime = item.paymentConfirmTime
-                            const success = await this.updateBeiAn(info, 1)
-                            if (success) {
-                                this.jumpSendFeiShu(
-                                    {
-                                        ...info,
-                                        skuName: order.skuName
-                                    },
-                                    1
-                                )
-                            }
-                        }
-                    }
-                }
-            }
 
             const remarkMap = await this.getOrderRemark(this.stopList.map(item => item.orderId).join(','))
 
@@ -159,47 +126,14 @@ export class JDService {
                     }
                 }
 
-                // await this.getOrderDetail(item.orderId)
-
                 for await (const order of orderItems) {
                     const skuId = order.skuId
                     const info = await this.queryOneBeiAnInfo(skuId)
-                    if(!info) continue;
-                    info.orderId = item.orderId
-                    info.paymentConfirmTime = item.paymentConfirmTime
-                    order.mainSkuId = info.skuId
-                    if (info.type == 1) {
-                        if (diffTime > 12) {
-                            continue
-                        }
-                        const success = await this.updateBeiAn(info, 0);
-                        if (success) {
-                            this.sendFeiShu(
-                                {
-                                    ...info,
-                                    skuName: order.skuName
-                                }
-                                , 0)
-                        }
-                    } else {
-                        const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
-                        // 超过十分钟
-                        if (diffTime >= 12 && diffTime <= 7200) {
-                            if (this.errOrderMap[item.orderId]) {
-                                continue
-                            }
-                            this.errOrderMap[item.orderId] = true
-                            this.logger.info(item.orderId, '超过十二分钟啦')
-                            const hasOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
-                            // 如果其他订单不包含此sku
-                            if (!hasOrder) {
-                                const success = await this.updateBeiAn(info, 1);
-                                if (success) {
-                                    this.tenMinutesNotify(info, 1)
-                                }
-                            }
-                        }
-                    }
+                    // if(info) continue;
+                    // info.orderId = item.orderId
+                    // info.paymentConfirmTime = item.paymentConfirmTime
+                    // order.mainSkuId = info.skuId
+                    this.relationMain(skuId)
                 }
             }
             setTimeout(() => {
@@ -218,68 +152,103 @@ export class JDService {
         }
     }
 
-    async changeTenOrder() {
-        const uniqueData = [...new Set(this.orderList.map(JSON.stringify))].map(JSON.parse);
-        for await (const item of uniqueData) {
-            const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
-            const orderItems = item.orderItems;
-            // 异常订单不处理
-            if (item.orderStatus === -4) {
-                continue;
-            }
-            // if(remarkMap[item.orderId]) {
-            //     // 身份证不匹配跳过
-            //     if (remarkMap[item.orderId].remark === '身份证信息不一致') {
-            //         this.logger.info(item.orderId, remarkMap[item.orderId].remark)
-            //         continue;
-            //     }
-            // }
+    // 关联主备案
+    async relationMain(skuId) {
+        const skuList = await this.findAllSku(skuId)
+        skuList.forEach(item => {
+            this.relationRecord(item.skuId)
+        })
+    }
 
-            for (const order of orderItems) {
-                const skuId = order.skuId
-                const info = await this.queryOneBeiAnInfo(skuId)
-                if(!info) continue;
-                info.orderId = item.orderId
-                info.paymentConfirmTime = item.paymentConfirmTime
-                order.mainSkuId = info.skuId
-                if (info.type == 1) {
-                    // if (diffTime > 12) {
-                    //     continue
-                    // }
-                    // const success = await this.updateBeiAn(info, 0);
-                    // if (success) {
-                    //     this.sendFeiShu(
-                    //         {
-                    //             ...info,
-                    //             skuName: order.skuName
-                    //         }
-                    //         , 0)
-                    // }
-                    uniqueData.splice(uniqueData.findIndex(t => t.orderId === item.orderId), 1)
-                } else {
-                    const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
-                    // 超过十分钟
-                    if (diffTime >= 12 && diffTime <= 7200) {
-                        if (this.errOrderMap[item.orderId]) {
-                            continue
-                        }
-                        this.errOrderMap[item.orderId] = true
-                        this.logger.info(item.orderId, '超过十二分钟啦')
-                        const hasOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
-                        // 如果其他订单不包含此sku
-                        if (!hasOrder) {
-                            const success = await this.updateBeiAn(info, 1);
-                            if (success) {
-                                this.tenMinutesNotify(info, 1)
-                            }
-                        }
+    async relationRecord(skuId) {
+        const info = await this.queryOneBeiAnInfo(skuId);
+        if (!info) {
+            const ucpId = await this.getOneMain();
+            if (ucpId && ucpId != 'undefined') {
+                const shareInfo = await this.getShareInfoByUcp(ucpId);
+                if (shareInfo) {
+                    const success = await this.shareSku(shareInfo, skuId);
+                    if (success) {
+                        this.logger.info('共享备案成功',ucpId, skuId)
+                        this.ucpPool[ucpId] = this.ucpPool[ucpId] + 1;
+                        this.sendFeiShu(shareInfo, skuId, ucpId)
+                    } else {
+                        this.logger.info('共享备案失败',ucpId, skuId)
                     }
                 }
             }
         }
-
-        this.orderList = uniqueData;
+        // console.log(info)
     }
+
+    async findAllSku(skuId) {
+        const res  = await fetch("https://sff.jd.com/api?v=1.0&appId=JOLCHU4FPZVMUIHUK9MQ&api=dsm.wareshopv2.ware.wareListService.queryWareList", {
+            "headers": {
+                "accept": "application/json, text/plain, */*",
+                "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                "cache-control": "no-cache",
+                "content-type": "application/json;charset=UTF-8",
+                "dsm-lang": "undefined",
+                "dsm-platform": "pc",
+                "dsm-site": "undefined",
+                "dsm-trace-id": "8980f4c7-7cf0-4a85-8601-225ab3f77460",
+                "pragma": "no-cache",
+                "priority": "u=1, i",
+                "sec-ch-ua": "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "\"macOS\"",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-site",
+                "x-requested-with": "XMLHttpRequest",
+                "cookie": "__jdu=17036002655721718781778; shshshfpa=44e010ae-b994-5292-d604-85a49c6a806d-1611905242; shshshfpx=44e010ae-b994-5292-d604-85a49c6a806d-1611905242; corpBehavior=1; user-key=a7825309-2ba4-4a33-8f38-a75708547444; ipLocation=%u7518%u8083; PCSYCityID=CN_330000_330100_0; areaId=15; language=zh_CN; __jdv=56585130|direct|-|none|-|1714995650246; pinId=0KP1G7s94DuxaVIvjxjLjA; ceshi3.com=000; _pst=chaojie123abc; thor=A0D5E885DAD0A3FD4AF4545973394B92E95F944F1434C75CD674E64B40DB01E737A4213D2A15CD699CD6E98022284680164AFB6A22A2B3462D100E678353257FE1F3D97102C55A9A9D18353C2BD4A179CDEA16AD24CA9A49A83BE30B37542E694E02121E0236D505E5E585F56D61D7D9352B2DEFA56E89027CBF5728AC146DD80DA43067059FFC9CC5E55E9FDC8FEADE; flash=2_qml4pFpX0zDJb9EWT9Sic49YWSG0So3f2xxsmzI1fUxJWeGYZbaOVKkOrzbz0mfWYvbfCYL8IBN0GQDXQB29GczeIUcTJY_zMwmvZI0MlEbuVpQBZq-yUcZdh0ot468mTEf2sH4ERze7jLpCGCkq0q**; unick=chaojie123abc; pin=chaojie123abc; _tp=5978bpiwDtiEf4e87%2BQIgA%3D%3D; TrackID=1UFnPq4g_-xiprgCd3hjZiYseSbD-HY1cljlaTrHuXeF5o-b2vJTSWkphFmFugGMy; b-sec=VVCFY6DARKDGCZR24ZPICW2P3L3OLVALLE42ZDPU7CLJBIE2YWXI7TMNQN7X7NMZ; __USE_NEW_PAGEFRAME__=true; __USE_NEW_PAGEFRAME_VERSION__=v11; chat.jd.com=20170206; _s_vender_=YHIEXVX3WHFIPWCINLXKUSFDD47OF5CJIPKYKBEALFOT2JDKYKGSF6RZQWGUJWKU3WV4UJVGPA3XE5ISNY7GZRKYQIA7KDBQU3ZHECG2EH4KOAV6ISN6A45RP6FGCQVPJTOZTR5SQMP757SLOF2WKCAYHI7V7QIRYYJPBP5QGYTBKMWGD7SPVKJI53DOIWLWQNZ6CWRNPX6LSE55SI2ALSNCKYKOAYTJTJ2W34YJWBONUS2HKEOKRGNLRCWCG6NGAC6HBTWGSLT6R6N6SN3D6DIATLN3ZEJ6VYUVY4NCQXX3LRTTVAE7HKEGD2KOGYAA7H5ADAQZF2JHYHJ537CDEJMU4Y; 3AB9D23F7A4B3CSS=jdd03OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLUAAAAMPJXCI3YAAAAAACTYEAR6OXXFASUX; source=PC; platform=pc; lpkLoginType=3; ipLoc-djd=0-0-0-0.0; cn=1; 3AB9D23F7A4B3C9B=OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLU; shshshfpb=BApXcpYfOTupAZKVti4TR4OK9jl9ZPaOCBkF1Ln1b9xJ1MhjvtIO2; _s_base_=YHIEXVX3WHFIPWCINLXKUSFDD4J33ERUAXE2EVWW5YZG7BQSQJI2CJMJ3L4UN345PTWQKTVCMSZWESTXVQZTFEDKMBTVTJIFHSL64TKSWMUVMJWWBIYT6HECQN23KHDZ7UPKL5BCEDKCY6OVA5BAFMNN6F6C4724S63JOTCTR3VN7J4HLYYQ; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC4Z5CRLK5VT4DMZR35XDW3FWVYRTCNE6YVKRXISUMO5VDSLXSL5ASUVH46IGQS4XX2SG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD4VIRGCSX3ZL233AUXYFACEQYCNEQIP6PTKVWLVLT5KXD45SKIFV47MR6BQDZWDGR42UKETJ55M3L6QBDTGHQHRURVFMUFGU4KMAPCQAIIP73HPRVLEPRZC6OSBS3575U3QL7OM6W7EW6AWMLBI3UOX3ILSA; __jda=27966078.17036002655721718781778.1703600266.1705315084.1705376288.47; __jdc=27966078; __jdb=27966078.37.17036002655721718781778|47.1705376288",
+                "Referer": "https://shop.jd.com/jdm/ware/manage/list/OnsaleWare?_JDMOMID_=1303,1302",
+                "Referrer-Policy": "no-referrer-when-downgrade"
+            },
+            "body": JSON.stringify({"accessContext":{"source":"web"},"wareListQuery":{"pageNo":1,"pageSize":10,"wareListTab":2,"orderBy":"onsaletime,desc","custom_productId":null,"onlineTimeStart":null,"onlineTimeEnd":null,"offlineTimeStart":null,"offlineTimeEnd":null,"publishTimeStart":null,"publishTimeEnd":null,"shopCategory":[],"categoryId":null,"multiCategoryId":null,"productName":null,"skuId":skuId,"jdPriceMin":null,"jdPriceMax":null,"itemNum":null,"stockNumMin":null,"stockNumMax":null,"brandId":null,"offlineType":null,"imei":null,"hasImage":null,"colType":null,"qualityScoreMin":null,"qualityScoreMax":null,"startSaleNum":null,"endSaleNum":null,"modifyTimeStart":null,"modifyTimeEnd":null,"productStatus":null,"productIds":null}}),
+                "method": "POST"
+        }).then(res => res.json());
+
+        const productInfo = res.data.data[0];
+        const {productId} = productInfo;
+        const skuData = await fetch("https://sff.jd.com/api?v=1.0&appId=JOLCHU4FPZVMUIHUK9MQ&api=dsm.wareshopv2.ware.skuReserveService.getSkuReserveInfo", {
+            "headers": {
+                "accept": "application/json, text/plain, */*",
+                "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                "cache-control": "no-cache",
+                "content-type": "application/json;charset=UTF-8",
+                "dsm-lang": "undefined",
+                "dsm-platform": "pc",
+                "dsm-site": "undefined",
+                "dsm-trace-id": "1f71304d-92ff-4cba-8a2d-e2e89051d050",
+                "pragma": "no-cache",
+                "priority": "u=1, i",
+                "sec-ch-ua": "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "\"macOS\"",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-site",
+                "x-requested-with": "XMLHttpRequest",
+                "cookie": this.JDCookies,
+                "Referer": "https://shop.jd.com/jdm/ware/manage/list/SkuBind?id=1994135891&onsale=OnsaleWare",
+                "Referrer-Policy": "no-referrer-when-downgrade"
+            },
+            "body": JSON.stringify({"accessContext":{"source":"web"},"productId":productId}),
+            "method": "POST"
+        }).then(res => res.json());
+        // console.log( skuData.data.skuReserveDetails);
+        return skuData.data.skuReserveDetails
+    }
+
+    async getOneMain() {
+        for(const k of Object.keys(this.ucpPool)) {
+            if (this.ucpPool[k] <= 6) {
+                return k
+            }
+        }
+    }
+
     // 查询下一阶段订单列表
     async findStopOrder() {
         try {
@@ -287,19 +256,21 @@ export class JDService {
                 "headers": {
                     "accept": "application/json, text/plain, */*",
                     "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                    "cache-control": "no-cache",
                     "content-type": "application/json;charset=UTF-8",
-                    "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+                    "pragma": "no-cache",
+                    "priority": "u=1, i",
+                    "sec-ch-ua": "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
                     "sec-ch-ua-mobile": "?0",
                     "sec-ch-ua-platform": "\"macOS\"",
                     "sec-fetch-dest": "empty",
                     "sec-fetch-mode": "cors",
                     "sec-fetch-site": "same-origin",
-                    // "cookie": "language=zh_CN; __jdv=56585130|direct|-|none|-|1703600265575; pinId=Mk_A6Nbv7MenkDneLmJDcA; unick=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; _tp=WWkrE5q1uaY3bnuvPN7mC0Jy7Qj98SqryFRfDnmAGXBfj3EZkqYEdCCNPQpAbAri; ceshi3.com=000; _pst=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; __jdu=17036002655721718781778; __USE_NEW_PAGEFRAME__=false; __USE_NEW_PAGEFRAME_VERSION__=v9; chat.jd.com=20170206; flash=2_gIf-6hV0n-3D-owJHuVRpoG10QbYhFqtf8iq_PAPhP_zARQSoNehkDTUKX2bRosNurZi5lwdeYPjJ6lyjjCj6DfYmyPcMhCrz4uSJ8Kexsq*; TrackID=1ZSq5cEcVwiknpIRBT-fNmlAXfS_Vw6wS43RS8OYzM1HL5lsU9ffdVyq7YqBUIo-a; thor=6901B38FCABE2222F893FE4DA6A41AD2E3C483C9683B39E7396B71698DCB11C14EC8CD85133AC917234988D59EE06B23F7FEF3328DD8ADAFC4EAB61C5186AE21E4701CF1263EB28EDD024710F49B0ECD72FD38E9917280EDE8E802A8F5CDEC75B3A323ADC1B43DFB4FB87AB43993FE1C74AFBCBF673834D99FD3094B90C3789565784C8BCE4E664302CF9229EC53115B; _vender_=TNK3O6PALVQGGMI642LJKJZPNN56IZEONGC7GL4VVDUXDFCCPPZQLPMTKJILMAPLE66HGX6H6FTDBCGJT2CHIQVGBEALDGQXK7G2A7QXSDNOYW6CAGCLDWEQCPKGC3KUGVRB646PDVLYUQI3BDJ566XYIWJK3BINEVNTZU4XPHS7MGPM3IRXP3KQCYUEFTMPHRWL6CUN7T6NJ73NKFWGRSQYITLV2HHO3WE5JGLOWXRT3TAPTQSGGNICGAJHKSRTNTSC54R6Q4CXGZB2XWZYYTWTKUI23OXFVXEK3PE6BHKXEXJ5ZBTE7AQ4DRO7SJ75N23E6IGHEDQCT72I5345J2I36SSU434I7P6CY7EB2AEQ7LYOCV7OPGUYC4YKELPF3MGRB5OZSQZPV5DBDCN2OVVT3WHFGAZIBXIZMBNTMAJCDBGXFURYZVWQPSCD3VDH4ZBLXMMUXPQJVVPYTHZOTYSQGOZPT3VJVDPGXA56A3LCJRUMD33LCTZXPFSMQ3XWZN2XCXEU377PYBSOJ5KDPWYFTXBCW4XVKE32CJKDJPI6QP6QVQYT5GF65B3DWLM6EW57FJQBO6Q762KFYJFVOUQ3HS27ZJL7T2BV2L72ABR2ZXET3GKM3JAUMD6LEL6M7JBTCI4GVDBYSZ7BSSE6PVI7NJIBQV5MVVI6CUJN7K7J2L4XHGOBDC35OONJCFTROGKKKV2WQVCB4JRYRBOMWGBWLI54R5PAXPC62DI; b-sec=H7A3ZVYOXG5O6CIG7HQL4J7UIHCOAOXSWXVJGQ6BOBAGYGTIVDEJSOPSWOPURFK5; _vender_new_=GI63BGTJFDBQ5VFYRAGXDIUTOUGBH4IELSA4HBAE7MB4S5HIL5QMHN2LMW7LKWD43YCKHJGXPJWTPRAEQ2QTFLJHKJUFHCXGGYIHCD7WSWY4PLU54NT3HGWB4MCDSKE4VJSCWBCJJ3C6Z2VI46TWP7ZJBWNTMPWIQ77NXK4VVKW6ABLW3LCTHZEYXQSC5L6SULQYZLAOLYQIKX2KPA4NEI5RHY4F2FAXI5CPTHP6BXFL757MRIFGERH2CQC2D3RAAFDYIVNI7B7NTLXWX5NEUT7IONYJQA2GVEUHKGHLAXO2JD6UI7C57LRQ4MAILLWECXYYZ2YLJ5HVL6HMAVKWPNRUQV7VQ4TJYKV2GUWP66XJIZDXBYZKDAO54T5BBWUA7DONKSVFDJCTNT7XV2KGI5YOGKQYDXPE7IINVADYCCF5H6RHZCCNDAPJ5WDJVY2XHWD7VVNICVT7PTKMSBW33L3BBSATV65XAXG72Z3QJ45MXA6IP2XQELXE7F47VC57UTM3EBWFRS7SWZCFQ5TPOT46JIQ6PNSYVA4453VSW4EAUWK6FRG3WAOQPSHG6BYFS7IG5ZCONS7EQAHSIUWPVDMBEDVBVCXW7ZSOG2U73QD4GGSJJ64QEOMY6A6GSGUVQ3LK46TGOU55INQYNJ63G3NK4M; universityLanguage=zh_CN; xue_userTypeCookieName50b60fba08fddfff319d0b5acc9d6eee=\"{\\\"1\\\":\\\"POP\\\"}\"; xue_userTypePageCookieName50b60fba08fddfff319d0b5acc9d6eee=1; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC675CBWSP3REU42YTAQTNJUDXURTCNE6YVKRXISUFXTDU7V3U7QL2S3GKYL2ZCNGXSSG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD46QKR5DC3ZOXYJJSMQ7LPFV7Q42XNFW3B6USLKSP4DOKX736ZCQKMJCPUFAFUHXCAGBCJZTXPG55TUBDTGHQHRURVFNRRRQCPZ7EBOWHANCWVFJHFVSTEQXZ6XDSAY7EABH3APEXJ2C7MDIZP2K6O4UWVEXBLKE677BPFI2A; __jda=191429163.17036002655721718781778.1703600266.1703729497.1703749795.11; __jdc=191429163; _BELONG_CLIENT_=WPSC4XJXWK5USS4JNZY2X7VRLR5MCBKRSVHEXABGTHDGISIQK5YOLZUXYE7IOIM7MOKO74H6CRN6WHAAR4TMDV3XZWMXZRCRT5XRNE3V356BTOB2Y7LPK66VWQK6HPTGWVXIDXDCPVE3W5WMHAIO6AT2LX2XXVNUCXR34ZWFK6HY45CORGIKOSYDYZBF27WOKTUX6BS4FZMIJWNUX6CB4JAA25ZLF7ZEKYOO4QV5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BMTUJZACIBHXQFAVLRF76VQY5PNJGGJNBEZHSFYYJA3YORRT7FB5AHCOIFQKF3W5RWNUX6CB4JAA26JNMO7AYWNUPZF5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BWZDKMOJ5BS6II53ERY6ALV3ZWPF42L4CPUHEGPYIII35KDC4FCNVCORCXFD6IVNLBEDPB2GGP4UHWNRUDOQBDIW7RZJXBA2WV5ANZOTEGUCDWYRVQS2YUTIZNZ276PRYG4N56V6YTII7MBKBC7LYHO7C555HTSBXGNRM3E466AYN67DHWVM5HQFJ4NFDO5BSMLEHDIVX2QBZKIZSDNVQVV6ZDQ; __jdb=191429163.18.17036002655721718781778|11.1703749795; 3AB9D23F7A4B3C9B=OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLU",
                     "cookie": this.JDCookies,
-                    "Referer": "https://porder.shop.jd.com/order/orderlist/suspend?t=1703826675241",
+                    "Referer": "https://porder.shop.jd.com/order/orderlist/allOrders?t=1715001554172",
                     "Referrer-Policy": "strict-origin-when-cross-origin"
                 },
-                "body": "{\"current\":1,\"pageSize\":10,\"sortName\":\"desc\",\"orderId\":\"\",\"skuName\":\"\",\"orderCreateDateRange\":[],\"orderCompleteDateRange\":[],\"receiverName\":\"\",\"receiverTel\":\"\",\"userPin\":\"\",\"skuId\":\"\",\"logiNo\":\"\",\"paymentType\":\"\",\"orderType\":\"\",\"orderSource\":\"\",\"deliveryType\":\"\",\"storeId\":\"\",\"huoHao\":\"\",\"orderStatusArray\":[],\"o2oStoreIds\":null,\"provinceIds\":[],\"orderTag\":null,\"selectedTabName\":\"suspend\"}",
+                "body": "{\"current\":1,\"pageSize\":10,\"sortName\":\"desc\",\"orderId\":\"\",\"skuName\":\"\",\"orderCreateDateRange\":[],\"orderCompleteDateRange\":[],\"receiverName\":\"\",\"receiverTel\":\"\",\"userPin\":\"\",\"skuId\":\"\",\"logiNo\":\"\",\"paymentType\":\"\",\"orderType\":\"\",\"orderSource\":\"\",\"deliveryType\":\"\",\"storeId\":\"\",\"huoHao\":\"\",\"orderStatusArray\":[],\"o2oStoreIds\":null,\"provinceIds\":[],\"orderTag\":null,\"selectedTabName\":\"allOrders\"}",
                 "method": "POST"
             }).then(async d => {
                 try {
@@ -315,6 +286,71 @@ export class JDService {
                 orderList: []
             }
         }
+    }
+
+    async getShareInfoByUcp(ucp) {
+        const res = await fetch(`https://shop-hk.jd.com/recordShare/list.do?upc=${ucp}`, {
+            "headers": {
+                "accept": "*/*",
+                "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                "cache-control": "no-cache",
+                "pragma": "no-cache",
+                "sec-ch-ua": "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "\"macOS\"",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-origin",
+                "x-requested-with": "XMLHttpRequest",
+                "cookie": this.JDCookies,
+                "Referer": "https://shop-hk.jd.com/recordShare/index.html",
+                "Referrer-Policy": "strict-origin-when-cross-origin"
+            },
+            "body": null,
+            "method": "GET"
+        }).then(res => res.json());
+        return res.result.result.shareRecordVoList[0]
+    }
+    async shareSku(shareInfo, skuId) {
+        // id: 16191042
+        // venderId: 13942040
+        // eclpCode: EBU4418055093551
+        // upc: 069729199731231
+        // shareVenderId: 13942040
+        // mainSkuId: 10085043101396
+        // sharingSkuId: 1
+        // customsRegionCode: 5141
+        // customId: guangzhou
+        // ccProvider: 010021
+        // ccProviderName:
+        //     customModel: zhiyou
+        // mainSkuFlag: true
+        const res = await fetch(`https://shop-hk.jd.com/recordShare/shareUPC.do?id=${shareInfo.id}&venderId=${shareInfo.venderId}&eclpCode=${shareInfo.eclpCode}&upc=${shareInfo.shareInfo}&shareVenderId=${shareInfo.shareVenderId}&mainSkuId=${shareInfo.mainSkuId}&sharingSkuId=${skuId}&customsRegionCode=${shareInfo.customsRegionCode}&customId=${shareInfo.customId}&ccProvider=${shareInfo.ccProvider}&ccProviderName=${shareInfo.ccProviderName}&customModel=${shareInfo.customModel}&mainSkuFlag=true`, {
+            "headers": {
+                "accept": "*/*",
+                "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                "cache-control": "no-cache",
+                "pragma": "no-cache",
+                "sec-ch-ua": "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "\"macOS\"",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-origin",
+                "x-requested-with": "XMLHttpRequest",
+                "cookie": this.JDCookies,
+                    "Referer": "https://shop-hk.jd.com/recordShare/index.html",
+                "Referrer-Policy": "strict-origin-when-cross-origin"
+            },
+            "body": null,
+            "method": "GET"
+        }).then(res => {
+            return res.json()
+        });
+        if (res.result.success) {
+            console.log(res.result)
+        }
+        return res.result.success;
     }
     // 获取备列表
     async getBeiAnList(page = 1) {
@@ -338,15 +374,21 @@ export class JDService {
             this.beiAnList.push(...list)
             for (const item of list) {
                 const info = await this.queryOneBeiAnInfo(item.skuId)
-                if (info && info.type == 0) {
-                    await this.updateBeiAn(info, 1);
+                if (info && !info.mainSkuId) {
+                    const count = await this.queryBeiAnShareCount(info.upc);
+                    if (count < 6) {
+                        this.ucpPool[info.upc] = count
+                    } else {
+                        delete this.ucpPool[info.upc]
+                    }
                 }
             }
             if (page < res.totalPage) {
                 setTimeout(() => {
                     this.getBeiAnList(res.page + 1)
-                }, 2000)
+                }, 8000)
             } else {
+                this.getBeiAnList(1)
                 console.log('执行完成')
             }
 
@@ -354,12 +396,6 @@ export class JDService {
             console.log(e, 'getBeiAnList')
             this.getBeiAnList(1)
         }
-        // list.forEach(item => {
-        //     if (item.type === 1) {
-        //         console.log('type 1')
-        //     }
-        // })
-        // console.log(res,list, '--');
     }
     // 查询单个备案详情
     async queryOneBeiAnInfo(skuId) {
@@ -385,13 +421,49 @@ export class JDService {
             }).then(d => d.json());
 
             const info = result.result.result.list[0];
-            if (info && info.mainSkuId) {
-                return  await this.queryOneBeiAnInfo(info.mainSkuId)
+            return info
+            // if (info && info.mainSkuId) {
+            //     return await this.queryOneBeiAnInfo(info.mainSkuId)
+            // } else {
+            //     return  info
+            // }
+        } catch (e) {
+                return await this.queryOneBeiAnInfo(skuId)
+            console.log(e, 'error info')
+            // return  null
+        }
+    }
+
+
+    async queryBeiAnShareCount(ucpId) {
+        try {
+            const result = await fetch(`https://shop-hk.jd.com/popRecording/recorded/recordedManage.do?goodsName=&skuId=&upc=${ucpId}&customId=&fromCreated=&toCreated=&ccProvider=&customModel=&sellerRecord=&page=1`, {
+                "headers": {
+                    "accept": "*/*",
+                    // "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                    "sec-ch-ua": "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
+                    // "sec-ch-ua-mobile": "?0",
+                    // "sec-ch-ua-platform": "\"macOS\"",
+                    // "sec-fetch-dest": "empty",
+                    // "sec-fetch-mode": "cors",
+                    // "sec-fetch-site": "same-origin",
+                    // "x-requested-with": "XMLHttpRequest",
+                    // "cookie": "shshshfpa=44e010ae-b994-5292-d604-85a49c6a806d-1611905242; shshshfpx=44e010ae-b994-5292-d604-85a49c6a806d-1611905242; __jdu=1700109613209731139267; __jdv=76161171|direct|-|none|-|1703342303715; areaId=15; ipLoc-djd=15-1213-0-0; PCSYCityID=CN_330000_330100_0; thor=6901B38FCABE2222F893FE4DA6A41AD2B7B0C890E50CD438CE70BC24E947BA5C74C62E09C0A0D0A20A7CCFE5D0A04A5D6A305B0189BF1DB012876E697BD7A9F1C25C33FB5C7D8232F7C988F93B071792F075969C4EB68244AC3D47514DB51535261E0DC5F6E20CE450E59D18E6E7A983493D50B5BE48D3413E1D73BC53BE64D061B8505DFCE5AC4C8A3CFD0D336BA931; _tp=WWkrE5q1uaY3bnuvPN7mC0Jy7Qj98SqryFRfDnmAGXBfj3EZkqYEdCCNPQpAbAri; pinId=Mk_A6Nbv7MenkDneLmJDcA; _pst=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; unick=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; flash=2_ahn-HIMjFzg6gJaPiIiDr7fYvR5BkPzay-flyLklbZnw23kGkAPsX7sE7Bl-ZBivLG6zF5Hun6RMc6AtT6OQS5YudZiSpzZ7XNou97izdho*; ceshi3.com=000; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; TrackID=1eJakqOiiu7wAcmYygNZHWjPKiJPhQBiCiXDaFs6kzXOX_UMTTN1hvfe6V2MBgjxq; smb_track=68FA65B2AC0940C580281397D309CBF3; user-key=8d21ce0f-8695-4c7e-835e-a2fc50c50830; cn=0; language=zh_CN; __USE_NEW_PAGEFRAME__=false; __USE_NEW_PAGEFRAME_VERSION__=v9; chat.jd.com=20170206; 3AB9D23F7A4B3CSS=jdd03OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLUAAAAMMTJL3GFYAAAAADNLQB5PBUZY27AX; shshshfpb=AAjDfXpqMEpILfXnDP1RQdOco4vsSWBcDNClSQQAAAAA; __jda=191429163.1700109613209731139267.1700109613.1703385126.1703396104.8; __jdc=191429163; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC675CBWSP3REU42YTAQTNJUDXURTCNE6YVKRXISUFXTDU7V3U7QL2S3GKYL2ZCNGXSSG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD46QKR5DC3ZOXYJJSMQ7LPFV7Q42XNFW3B6USLKSP4DOKX736ZCQKMJCPUFAFUHXCAGBCJZTXPG55TUBDTGHQHRURVFIC5X344XUJBUB4ERW6SKYGMVMNEQXZ6XDSAY7EABH3APEXJ2C7MDIZP2K6O4UWVEXBLKE677BPFI2A; 3AB9D23F7A4B3C9B=OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLU",
+                    "Referer": "https://shop-hk.jd.com/popRecording/recorded/recorded.html",
+                    "Referrer-Policy": "strict-origin-when-cross-origin",
+                    "cookie": this.JDCookies
+                },
+                "body": null,
+                "method": "GET"
+            }).then(d => d.json());
+            const list = result.result.result.list;
+            if (list) {
+                return  list.length
             }
-            return  info
+            return 0
         } catch (e) {
             console.log(e, 'error info')
-            return  null
+            return  0
         }
     }
     // 获取下一阶段订单列表
@@ -760,7 +832,7 @@ export class JDService {
        }
     }
     // 暂停里跳出新订单备案改为否通知
-    async sendFeiShu(info1, type) {
+    async sendFeiShu(info1, skuId, upcId) {
         const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
         const shopName = this.shopInfo.name
 
@@ -768,7 +840,7 @@ export class JDService {
             "header": {
                 "title": {
                     "tag": "plain_text",
-                    "content": `监测暂停订单-备案修改通知- ${shopName}`
+                    "content": `sku关联主备案成功通知-${shopName}`
                 },
                 "template": "green"
             },
@@ -777,37 +849,14 @@ export class JDService {
                     "tag": "div",
                     "text": {
                         "tag": "lark_md",
-                        "content": `**原因**`
-                    }
-                },
-                {
-                    "tag": "note",
-                    "elements": [
-                        {
-                            "tag": "plain_text",
-                            "content": `跳出新订单`
-                        }
-                    ]
-                },
-                {
-                    "tag": "div",
-                    "text": {
-                        "tag": "lark_md",
-                        "content": "**订单信息** "
+                        "content": "skuId** "
                     },
                     "fields": [
                         {
                             "is_short": false,
                             "text": {
                                 "tag": "lark_md",
-                                "content": ''
-                            }
-                        },
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": `商品sku名称: ${info1.skuName} 订单号: ${info1.orderId}; 付款时间: ${info1.paymentConfirmTime}`
+                                "content": `${skuId}`
                             }
                         }
                     ]
@@ -823,66 +872,14 @@ export class JDService {
                             "is_short": false,
                             "text": {
                                 "tag": "lark_md",
-                                "content": ''
-                            }
-                        },
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": `主备案商品名称${info1.goodsName}; 主备案skuId: ${info1.skuId}`
+                                "content": `主备案skuId: ${info1.mainSkuId}; UPC: ${upcId}`
                             }
                         }
                     ]
                 },
-                {
-                    "tag": "div",
-                    "text": {
-                        "tag": "lark_md",
-                        "content": "**主备案详情链接** "
-                    },
-                    "fields": [
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": ''
-                            }
-                        },
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": `https://shop-hk.jd.com/popRecording/recorded/queryById.html?id=${info1.id}&disabled=true&recorded=true`}
-                        }
-                    ]
-                },
-                {
-                    "tag": "div",
-                    "text": {
-                        "tag": "lark_md",
-                        "content": "**备案状态已修改为** "
-                    },
-                    "fields": [
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": ''
-                            }
-                        },
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": `${type?"是": '否'} - ${now}`
-                            }
-                        }
-                    ]
-                }
             ]
         }
-        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e1ae178-a3cb-4ea9-b3f2-29d650c14731';
+        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/b9e52d87-c354-4865-aec3-0de2bf71b6c3';
 
         const options = {
             method: 'POST',
@@ -1507,12 +1504,12 @@ export class JDMainService {
             this.init()
         }, 10000)
 
-        // 每天8点到20点， 整点 发送在线店铺列表通知
-        schedule.scheduleJob('0 0 8-20 * * ?', () => {
-            this.onlineShopNotify()
-        });
-
-        setTimeout(() => this.onlineShopNotify(), 1000 * 30)
+        // // 每天8点到20点， 整点 发送在线店铺列表通知
+        // schedule.scheduleJob('0 0 8-20 * * ?', () => {
+        //     this.onlineShopNotify()
+        // });
+        //
+        // setTimeout(() => this.onlineShopNotify(), 1000 * 30)
     }
 
     _hash = {}
