@@ -85,7 +85,7 @@ export class JDService {
             } catch (e) {
 
             }
-        }, 1000 * 60 * 10)
+        }, 1000 * 60 * 3)
     }
     // 获取暂停的订单列表
     async getStopOrderList() {
@@ -204,7 +204,7 @@ export class JDService {
             }
             setTimeout(() => {
                 this.getStopOrderList()
-            },18000)
+            },15000)
             return  {
                 res,
             }
@@ -265,11 +265,12 @@ export class JDService {
                         }
                         this.errOrderMap[item.orderId] = true
                         this.logger.info(item.orderId, '超过十二分钟啦')
-                        const hasOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
+                        const hasOrder = await this.stopListHasSkuOtherOrder(skuId, item.orderId)
                         // 如果其他订单不包含此sku
                         if (!hasOrder) {
                             const success = await this.updateBeiAn(info, 1);
                             if (success) {
+                                uniqueData.splice(uniqueData.findIndex(t => t.orderId === item.orderId), 1)
                                 this.tenMinutesNotify(info, 1)
                             }
                         }
