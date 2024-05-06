@@ -54,7 +54,7 @@ export class JDService {
 
     die = false
 
-    private errorNotifyUrl = 'https://open.feishu.cn/open-apis/bot/v2/hook/79e4aded-fdf2-411c-ac25-0156e975a072'
+    private errorNotifyUrl = 'https://open.feishu.cn/open-apis/bot/v2/hook/355e60c4-3b74-434e-bf1e-9580a2bd7d54'
 
     logger = {
         info: function (...args) {
