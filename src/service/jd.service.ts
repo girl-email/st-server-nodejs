@@ -78,14 +78,17 @@ export class JDService {
         this.getStopOrderList()
         // this.getBeiAnList()
         this.getShopInfo()
-
-        setInterval(() => {
-            try {
-                this.changeTenOrder()
-            } catch (e) {
-
-            }
-        }, 1000 * 60 * 3)
+        // setTimeout(this.querySendOrder, 1000 * 60 * 2)
+        // setInterval(() => {
+        //     try {
+        //         this.changeTenOrder()
+        //     } catch (e) {
+        //
+        //     }
+        // }, 1000 * 60 * 3)
+        setTimeout(() => {
+            this.querySendOrder()
+        }, 1000 * 60 * 2)
     }
     // 获取暂停的订单列表
     async getStopOrderList() {
@@ -103,7 +106,7 @@ export class JDService {
             }
             this.stopListBak = [...this.stopList]
             this.stopList = res.orderList || [];
-            this.orderList = [...this.orderList, ...res.orderList]
+            // this.orderList = [...this.orderList, ...res.orderList]
 
             const jumpList = [];
             for (const j of this.stopListBak) {
@@ -184,7 +187,7 @@ export class JDService {
                     } else {
                         const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
                         // 超过十分钟
-                        if (diffTime >= 12 && diffTime <= 7200) {
+                        if (diffTime >= 13 && diffTime <= 7200) {
                             if (this.errOrderMap[item.orderId]) {
                                 continue
                             }
@@ -392,7 +395,7 @@ export class JDService {
             return  info
         } catch (e) {
             console.log(e, 'error info')
-            return  null
+            return  await this.queryOneBeiAnInfo(skuId)
         }
     }
     // 获取下一阶段订单列表
@@ -449,6 +452,80 @@ export class JDService {
             },5000)
         }
         // const now = Date.now()
+    }
+    // 查询下一阶段订单列表
+    async querySendOrder() {
+        try {
+            const res = await fetch("https://porder.shop.jd.com/order/orderlist", {
+                "headers": {
+                    "accept": "application/json, text/plain, */*",
+                    "accept-language": "zh,en-US;q=0.9,en;q=0.8,zh-CN;q=0.7",
+                    "content-type": "application/json;charset=UTF-8",
+                    "priority": "u=1, i",
+                    "sec-ch-ua": "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
+                    "sec-ch-ua-mobile": "?0",
+                    "sec-ch-ua-platform": "\"Windows\"",
+                    "sec-fetch-dest": "empty",
+                    "sec-fetch-mode": "cors",
+                    "sec-fetch-site": "same-origin",
+                    "sgm-context": "291589011154750800;291589011154750800",
+                    "cookie": this.JDCookies,
+                    "Referer": "https://porder.shop.jd.com/order/orderlist/waitOverseasOut?t=1715068620280",
+                    "Referrer-Policy": "strict-origin-when-cross-origin"
+                },
+                "body": "{\"current\":1,\"pageSize\":20,\"selectedTabName\":\"waitOverseasOut\",\"sortName\":\"desc\"}",
+                "method": "POST"
+            }).then(async d => {
+                try {
+                    return d.json()
+                } catch (e) {
+                    return d.text()
+                }
+            });
+
+            const orderList = res.orderList || []
+            for await (const item of orderList) {
+                const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
+                const orderItems = item.orderItems;
+                // 异常订单不处理
+                if (item.orderStatus === -4) {
+                    continue;
+                }
+                for await (const order of orderItems) {
+                    const skuId = order.skuId
+                    const info = await this.queryOneBeiAnInfo(skuId)
+                    if(!info) continue;
+                    info.orderId = item.orderId
+                    info.paymentConfirmTime = item.paymentConfirmTime
+                    order.mainSkuId = info.skuId
+                    if (info.type == 0) {
+                        const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
+                        // 超过十分钟
+                        if (diffTime >= 13 && diffTime <= 7200) {
+                            this.errOrderMap[item.orderId] = true
+                            this.logger.info(item.orderId, '超过十二分钟啦')
+                            const hasOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
+                            // 如果其他订单不包含此sku
+                            if (!hasOrder) {
+                                const success = await this.updateBeiAn(info, 1);
+                                if (success) {
+                                    this.tenMinutesNotify(info, 1, true)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            setTimeout(() => {
+                this.querySendOrder()
+            }, 1000 * 60 * 5)            // return  res
+        } catch (e) {
+            console.log('querySendOrder', 'error')
+            setTimeout(() => {
+                this.querySendOrder()
+            }, 1000 * 60 * 5)
+        }
     }
     // 更新/修改备案
     async updateBeiAn(info1, type = 1, time? = 0) {
@@ -1041,7 +1118,7 @@ export class JDService {
         await rp(options);
     }
     // 备案超过12分钟未跳出暂停改为是通知
-    async tenMinutesNotify(info1, type) {
+    async tenMinutesNotify(info1, type, isSend = false) {
         const now = dayjs().format('YYYY-MM-DD hh:mm:ss') // '25/01/2019'
         const shopName = this.shopInfo.name
 
@@ -1066,7 +1143,7 @@ export class JDService {
                     "elements": [
                         {
                             "tag": "plain_text",
-                            "content": `订单超过10分钟未跳出暂停`
+                            "content": `订单超过13分钟未跳出暂停${isSend? '-暂停下一阶段补偿逻辑' : '-暂停里超过'}`
                         }
                     ]
                 },
@@ -1551,9 +1628,12 @@ export class JDMainService {
             if (this._hash[jdService.thread]) {
 
                 if (this._hash[jdService.thread].fistErrorTime) {
-                    datas[jdService.thread] = null
                     if (!this._hash[jdService.thread].die) {
                         this._hash[jdService.thread].die = 1
+                    } else  {
+                        if(this._hash[jdService.thread].die >= 2) {
+                            datas[jdService.thread] = null
+                        }
                     }
                 } else {
                     // this._hash[jdService.thread].die = 0
@@ -1631,8 +1711,8 @@ export class JDMainService {
             }
         };
         const result = await rp(options);
-        this.lastErrorNotifyTime = Date.now()
-        this.die = this.die + 1
+        // this.lastErrorNotifyTime = Date.now()
+        // this.die = this.die + 1
         console.log(result)
     }
 
