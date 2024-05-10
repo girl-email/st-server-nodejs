@@ -105,12 +105,13 @@ export class JDService {
                 this.logger.info('登录过期', this.thread, this.shopInfo.name)
             }
             this.stopListBak = [...this.stopList]
-            this.stopList = res.orderList || [];
+
+            const orderList =  res.orderList || [];
             // this.orderList = [...this.orderList, ...res.orderList]
 
             const jumpList = [];
             for (const j of this.stopListBak) {
-                const order = this.stopList.find(item => item.orderId == j.orderId)
+                const order = orderList.find(item => item.orderId == j.orderId)
                 if (!order) {
                     jumpList.push(j)
                 }
@@ -145,9 +146,9 @@ export class JDService {
                 }
             }
 
-            const remarkMap = await this.getOrderRemark(this.stopList.map(item => item.orderId).join(','))
+            const remarkMap = await this.getOrderRemark(orderList.map(item => item.orderId).join(','))
 
-            for await (const item of this.stopList) {
+            for await (const item of orderList) {
                 const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
                 const orderItems = item.orderItems;
                 // 异常订单不处理
@@ -205,18 +206,22 @@ export class JDService {
                     }
                 }
             }
+
+
+            this.stopList = orderList
+
             setTimeout(() => {
                 this.getStopOrderList()
-            },15000)
+            },18000)
             return  {
                 res,
             }
         } catch (e) {
             setTimeout(() => {
                 this.getStopOrderList()
-            },7000)
-            this.stopListBak = lastBakList;
-            this.stopList = lastList;
+            },10000)
+            // this.stopListBak = lastBakList;
+            // this.stopList = lastList;
             this.logger.info(e, 'error, stop Order catch')
         }
     }
@@ -473,7 +478,7 @@ export class JDService {
                     "Referer": "https://porder.shop.jd.com/order/orderlist/waitOverseasOut?t=1715068620280",
                     "Referrer-Policy": "strict-origin-when-cross-origin"
                 },
-                "body": "{\"current\":1,\"pageSize\":20,\"selectedTabName\":\"waitOverseasOut\",\"sortName\":\"desc\"}",
+                "body": "{\"current\":1,\"pageSize\":10,\"selectedTabName\":\"waitOverseasOut\",\"sortName\":\"desc\"}",
                 "method": "POST"
             }).then(async d => {
                 try {
@@ -501,9 +506,9 @@ export class JDService {
                     if (info.type == 0) {
                         const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
                         // 超过十分钟
-                        if (diffTime >= 13 && diffTime <= 7200) {
+                        if (diffTime >= 13 && diffTime <= 120) {
                             this.errOrderMap[item.orderId] = true
-                            this.logger.info(item.orderId, '超过十二分钟啦')
+                            this.logger.info(item.orderId, diffTime, '超过十二分钟啦')
                             const hasOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
                             // 如果其他订单不包含此sku
                             if (!hasOrder) {
@@ -519,12 +524,12 @@ export class JDService {
 
             setTimeout(() => {
                 this.querySendOrder()
-            }, 1000 * 60 * 5)            // return  res
+            }, 1000 * 60 * 10)            // return  res
         } catch (e) {
             console.log('querySendOrder', 'error')
             setTimeout(() => {
                 this.querySendOrder()
-            }, 1000 * 60 * 5)
+            }, 1000 * 60 * 10)
         }
     }
     // 更新/修改备案
@@ -691,7 +696,7 @@ export class JDService {
             const orderItems = item.orderItems;
             const hasSku = orderItems.some(j => j.skuId == skuId || j.mainSkuId == skuId);
             const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
-            if (diffTime <= 12 && hasSku) {
+            if (diffTime <= 13 && hasSku) {
                 return true
             }
         }
