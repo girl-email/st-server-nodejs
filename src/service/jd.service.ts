@@ -78,14 +78,6 @@ export class JDService {
         this.getStopOrderList()
         // this.getBeiAnList()
         this.getShopInfo()
-        // setTimeout(this.querySendOrder, 1000 * 60 * 2)
-        // setInterval(() => {
-        //     try {
-        //         this.changeTenOrder()
-        //     } catch (e) {
-        //
-        //     }
-        // }, 1000 * 60 * 3)
         setTimeout(() => {
             this.querySendOrder()
         }, 1000 * 60 * 2)
@@ -95,7 +87,6 @@ export class JDService {
         const lastBakList =  this.stopListBak;
         const lastList =  this.stopList;
         try {
-            console.log("开始新的一轮暂停订单检查")
             const res = await this.findStopOrder()
 
             if (Array.isArray(res.orderList)) {
@@ -107,8 +98,6 @@ export class JDService {
             this.stopListBak = [...this.stopList]
 
             const orderList =  res.orderList || [];
-            // this.orderList = [...this.orderList, ...res.orderList]
-
             const jumpList = [];
             for (const j of this.stopListBak) {
                 const order = orderList.find(item => item.orderId == j.orderId)
@@ -123,12 +112,12 @@ export class JDService {
                     const orderItems = item.orderItems;
                     for (const order of orderItems) {
                         const skuId = order.skuId
-                        const hasOtherOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
+                        const hasOtherOrder = await this.stopListHasSkuOtherOrder((order.mainSkuId || order.skuId), item.orderId)
                         if (hasOtherOrder) {
                             continue;
                         }
                         const info = await this.queryOneBeiAnInfo(skuId)
-                        if (info) {
+                        if (info && info.type == 0) {
                             info.orderId = item.orderId
                             info.paymentConfirmTime = item.paymentConfirmTime
                             const success = await this.updateBeiAn(info, 1)
@@ -188,7 +177,7 @@ export class JDService {
                     } else {
                         const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
                         // 超过十分钟
-                        if (diffTime >= 13 && diffTime <= 7200) {
+                        if (diffTime >= 13 && diffTime <= 120) {
                             if (this.errOrderMap[item.orderId]) {
                                 continue
                             }
@@ -209,7 +198,6 @@ export class JDService {
 
 
             this.stopList = orderList
-
             setTimeout(() => {
                 this.getStopOrderList()
             },18000)
@@ -219,7 +207,7 @@ export class JDService {
         } catch (e) {
             setTimeout(() => {
                 this.getStopOrderList()
-            },10000)
+            },18000)
             // this.stopListBak = lastBakList;
             // this.stopList = lastList;
             this.logger.info(e, 'error, stop Order catch')
@@ -371,7 +359,7 @@ export class JDService {
         // console.log(res,list, '--');
     }
     // 查询单个备案详情
-    async queryOneBeiAnInfo(skuId) {
+    async queryOneBeiAnInfo(skuId, time = 0) {
         try {
             const result = await fetch(`https://shop-hk.jd.com/popRecording/recorded/recordedManage.do?goodsName=&skuId=${skuId}&upc=&customId=&fromCreated=&toCreated=&ccProvider=&customModel=&sellerRecord=&page=1`, {
                 "headers": {
@@ -399,8 +387,11 @@ export class JDService {
             }
             return  info
         } catch (e) {
-            console.log(e, 'error info')
-            return  await this.queryOneBeiAnInfo(skuId)
+            this.logger.info(e, 'error info')
+            if(time >= 2) {
+                return null
+            }
+            return  await this.queryOneBeiAnInfo(skuId, time + 1)
         }
     }
     // 获取下一阶段订单列表
@@ -506,7 +497,7 @@ export class JDService {
                     if (info.type == 0) {
                         const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
                         // 超过十分钟
-                        if (diffTime >= 13 && diffTime <= 120) {
+                        if (diffTime >= 13 && diffTime <= 30) {
                             this.errOrderMap[item.orderId] = true
                             this.logger.info(item.orderId, diffTime, '超过十二分钟啦')
                             const hasOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
@@ -524,12 +515,12 @@ export class JDService {
 
             setTimeout(() => {
                 this.querySendOrder()
-            }, 1000 * 60 * 10)            // return  res
+            }, 1000 * 60 * 20)            // return  res
         } catch (e) {
             console.log('querySendOrder', 'error')
             setTimeout(() => {
                 this.querySendOrder()
-            }, 1000 * 60 * 10)
+            }, 1000 * 60 * 20)
         }
     }
     // 更新/修改备案
@@ -658,9 +649,9 @@ export class JDService {
             "method": "POST"
         }).then(d => d.json());
         if (res.result.success) {
-            this.logger.info(`备案状态修改成功; 商品：${info1.goodsName}; skuId: ${info.skuId}`, type);
+            this.logger.info(`备案状态修改成功; 商品：${info1.goodsName}; skuId: ${info.skuId}`, type, this.shopInfo.name);
             if (time > 0) {
-                this.logger.info('重试修改成功， 第', time, '次修改备案', info.skuId)
+                this.logger.info('重试修改成功， 第', time, '次修改备案', info.skuId, this.shopInfo.name)
                 this.reTrySuccess(info1, type, {...res.result})
             }
         } else {
@@ -670,7 +661,7 @@ export class JDService {
                 this.logger.info(`备案状态修改失败; 商品：${info1.goodsName}; skuId: ${info.skuId}`, JSON.stringify(res.result), type, this.shopInfo.name);
             }
             if (time <= 2 && !res.result.errorMsg.includes('并发')) {
-                this.logger.info('尝试第', time + 1, '次修改备案', info.skuId)
+                this.logger.info('尝试第', time + 1, '次修改备案', info.skuId, type, this.shopInfo.name)
                 setTimeout(() => this.updateBeiAn(info1, type, time + 1), 5000)
             }
         }
@@ -1588,10 +1579,10 @@ export class JDMainService {
         this.init()
         setInterval(() => {
             this.init()
-        }, 10000)
+        }, 14000)
 
         // 每天8点到20点， 整点 发送在线店铺列表通知
-        schedule.scheduleJob('0 0 8-20 * * ?', () => {
+        schedule.scheduleJob('0 0 8-23 * * ?', () => {
             this.onlineShopNotify()
         });
 
@@ -1636,6 +1627,7 @@ export class JDMainService {
                     if (!this._hash[jdService.thread].die) {
                         this._hash[jdService.thread].die = 1
                     } else  {
+                        datas[jdService.thread] = null
                         if(this._hash[jdService.thread].die >= 2) {
                             datas[jdService.thread] = null
                         }
@@ -1700,7 +1692,8 @@ export class JDMainService {
                 }
             ]
         }
-        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e1ae178-a3cb-4ea9-b3f2-29d650c14731';
+        // const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e1ae178-a3cb-4ea9-b3f2-29d650c14731';
+        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/79e4aded-fdf2-411c-ac25-0156e975a072';
 
         const options = {
             method: 'POST',
@@ -1723,7 +1716,7 @@ export class JDMainService {
 
     // 检查店铺
     async checkShop(item) {
-        console.log('更新jd cookies成功')
+        // console.log('更新jd cookies成功')
         const isLogin = await this._hash[item].getShopInfo();
         if(!isLogin.name) {
             const diffTime = dayjs(dayjs()).diff(this._hash[item].fistErrorTime, 'minutes')
