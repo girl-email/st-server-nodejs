@@ -25,13 +25,15 @@ function  fetch(url, options, timeout = 60000) {
 }
 
 
+let onLineNotifyFn = null;
+
 @Provide()
 export class JDService {
     constructor(cookies) {
         // this.JDCookies = cookies
         setTimeout(() => {
             this.init()
-        },2000)
+        }, 2000)
 
         setInterval(() => {
             this.getShopInfo()
@@ -299,11 +301,11 @@ export class JDService {
                 "body": "{\"current\":1,\"pageSize\":10,\"sortName\":\"desc\",\"orderId\":\"\",\"skuName\":\"\",\"orderCreateDateRange\":[],\"orderCompleteDateRange\":[],\"receiverName\":\"\",\"receiverTel\":\"\",\"userPin\":\"\",\"skuId\":\"\",\"logiNo\":\"\",\"paymentType\":\"\",\"orderType\":\"\",\"orderSource\":\"\",\"deliveryType\":\"\",\"storeId\":\"\",\"huoHao\":\"\",\"orderStatusArray\":[],\"o2oStoreIds\":null,\"provinceIds\":[],\"orderTag\":null,\"selectedTabName\":\"suspend\"}",
                 "method": "POST"
             }).then(async d => {
-                try {
+                // try {
                     return d.json()
-                } catch (e) {
-                    return d.text()
-                }
+                // } catch (e) {
+                    // return d.text()
+                // }
             });
             return  res
         } catch (e) {
@@ -759,7 +761,7 @@ export class JDService {
                 }
                 return ret.shopSimpleVO
             }
-            return result
+            return {}
         } catch (e) {
             return {}
         }
@@ -1283,7 +1285,7 @@ export class JDService {
             }
         };
         const result = await rp(options);
-        this.lastErrorNotifyTime = Date.now()
+        // this.lastErrorNotifyTime = Date.now()
         console.log(result)
     }
     // 备案重试修改成功通知
@@ -1391,7 +1393,7 @@ export class JDService {
         console.log(res, '重试群通知结果')
     }
     // 登录过期通知
-    async logoutNotify(data) {
+    async logoutNotify(data, shopName1) {
         if (this.die > 2) {
             return
         }
@@ -1408,14 +1410,14 @@ export class JDService {
         const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
 
         const shopName = this.shopInfo.name
-        if (!shopName) {
+        if (!shopName && !shopName1) {
             return
         }
         let card = {
             "header": {
                 "title": {
                     "tag": "plain_text",
-                    "content": `京东商家后台登录过期-线程${this.thread}-${shopName}`
+                    "content": `京东商家后台登录过期-线程${this.thread}-${shopName || shopName1}`
                 },
                 "template": "red"
             },
@@ -1480,21 +1482,23 @@ export class JDService {
        this.lastErrorNotifyTime = Date.now()
         this.die = this.die + 1
         console.log(result)
+
+        onLineNotifyFn()
     }
     // 重新登录通知
     async reLoginNotify(data) {
         if (this.die > 0) {
             return
         }
-        if (!this.fistErrorTime) {
-            this.fistErrorTime = Date.now()
-        }
-        if (this.lastErrorNotifyTime) {
-            const diffTime = dayjs(dayjs()).diff(this.lastErrorNotifyTime, 'minutes')
-            if (diffTime < 5) {
-                return ''
-            }
-        }
+        // if (!this.fistErrorTime) {
+        //     this.fistErrorTime = Date.now()
+        // }
+        // if (this.lastErrorNotifyTime) {
+        //     const diffTime = dayjs(dayjs()).diff(this.lastErrorNotifyTime, 'minutes')
+        //     if (diffTime < 5) {
+        //         return ''
+        //     }
+        // }
 
         const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
 
@@ -1568,7 +1572,7 @@ export class JDService {
             }
         };
         const result = await rp(options);
-        this.lastErrorNotifyTime = Date.now()
+        // this.lastErrorNotifyTime = Date.now()
         console.log(result)
     }
 }
@@ -1579,14 +1583,16 @@ export class JDMainService {
         this.init()
         setInterval(() => {
             this.init()
-        }, 14000)
+        }, 30000)
+
+        onLineNotifyFn = this.onlineShopNotify.bind(this)
 
         // 每天8点到20点， 整点 发送在线店铺列表通知
-        schedule.scheduleJob('0 0 8-23 * * ?', () => {
+        schedule.scheduleJob('0 0 8-23,0 * * ?', () => {
             this.onlineShopNotify()
         });
 
-        setTimeout(() => this.onlineShopNotify(), 1000 * 30)
+        setTimeout(() => this.onlineShopNotify(), 1000 * 60)
     }
 
     _hash = {}
@@ -1604,6 +1610,7 @@ export class JDMainService {
 
         const promiseList = []
         Object.keys(data).forEach(async (item: string) => {
+            if(item == 240) return
             if(!data[item]) return
             if (!this._hash[item]) {
                 if (data[item]) {
@@ -1622,17 +1629,23 @@ export class JDMainService {
         const datas = JSON.parse(fs.readFileSync('data.json', 'utf-8'));
         Object.values(this._hash).forEach(jdService => {
             if (this._hash[jdService.thread]) {
-
                 if (this._hash[jdService.thread].fistErrorTime) {
                     if (!this._hash[jdService.thread].die) {
                         this._hash[jdService.thread].die = 1
                     } else  {
-                        datas[jdService.thread] = null
-                        if(this._hash[jdService.thread].die >= 2) {
-                            datas[jdService.thread] = null
-                        }
+                        datas[jdService.thread] && this._hash[jdService.thread].logoutNotify({'DATA': '京东商家后台登录过期'}, datas[jdService.thread].shopName)
+                        // datas[jdService.thread] && this.onlineShopNotify()
+                        this._hash[jdService.thread].die >= 2 && (datas[jdService.thread] = null)
                     }
                 } else {
+                    const shopName = this._hash[jdService.thread].shopInfo.name
+                    // if (shopName === 'LAURAMERONl海外卖场店') {
+                    //     delete datas[jdService.thread]
+                    //     delete this._hash[jdService.thread]
+                    // } else {
+                        datas[jdService.thread] && (datas[jdService.thread].shopName = shopName)
+
+                    // }
                     // this._hash[jdService.thread].die = 0
                 }
 
@@ -1725,7 +1738,10 @@ export class JDMainService {
             console.log(`线程${item}, ${this._hash[item].shopInfo.name}访问京东接口异常`)
         } else {
             if (this._hash[item].die) {
+                // 恢复登录通知
                 await this.reLoginNotify(this._hash[item])
+                this._hash[item].die = 0
+                this.onlineShopNotify()
             }
             this._hash[item].fistErrorTime = null
             this._hash[item].die = 0
