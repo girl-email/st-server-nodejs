@@ -142,10 +142,10 @@ export class JDService {
             for await (const item of orderList) {
                 const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
                 const orderItems = item.orderItems;
-                // 异常订单不处理
-                if (item.orderStatus === -4) {
-                    continue;
-                }
+                // // 异常订单不处理
+                // if (item.orderStatus === -4) {
+                //     continue;
+                // }
                 if(remarkMap[item.orderId]) {
                     // 身份证不匹配跳过
                     if (remarkMap[item.orderId].remark === '身份证信息不一致') {
@@ -629,7 +629,7 @@ export class JDService {
             }
         }
 
-        const body = `goodsPicture=${info.goodsPicture}&goodsData=${info.goodsData}&goodsAttach=${info.goodsAttach}&id=${info.id}&customId=${info.customId}&customsRegionCode=${info.customsRegionCode}&ccProviderName=${info.ccProviderName}&customModel=${info.customModel}&venderName=${info.venderName}&venderId=${info.venderId}&eclpCode=${info.eclpCode}&skuId=${info.skuId}&type=${type}&taxCommitmentsway=${info.taxCommitmentsway}&upc=${info.upc}&emgSkuId=${info.emgSkuId}&goodsName=${info.goodsName}&goodsNameEn=${info.goodsNameEn}&brand=${info.brand}&brandEn=${info.brandEn}&xingHao=${info.xingHao}&spe=${info.spe}&unit=${info.unit}&goodsSellerPrice=${info.goodsSellerPrice}&grossWeight=${info.grossWeight}&netWeight=${info.netWeight}&actualWeight=${info.actualWeight != 'null'? info.actualWeight: ''}&volume=${info.volume}&safeDays=${info.safeDays}&salesWebSite=${info.salesWebSite}&hsCode=${info.hsCode}&hgsbys=${info.hgsbys}&function=${info.function}&use=${info.use}&composition=${info.composition}&vatRate=${info.vatRate}&taxRate=${info.taxRate}&originCountry=${info.originCountry}&originArea=${info.originArea}&manufacturer=${info.manufacturer}&roduceAddress=${info.roduceAddress}&supplier=${info.supplier}&note=${info.note}&mfnTariff=${info.mfnTariff}&penaltyTariff=${info.penaltyTariff}&phone=${info.phone}&email=${info.email}&eclpName=${info.eclpName}&ccProvider=${info.ccProvider}`
+        const body = `goodsPicture=${info.goodsPicture}&goodsData=${info.goodsData}&goodsAttach=${info.goodsAttach}&id=${info.id}&customId=${info.customId}&customsRegionCode=${info.customsRegionCode}&ccProviderName=${info.ccProviderName}&customModel=${info.customModel}&venderName=${info.venderName}&venderId=${info.venderId}&eclpCode=${info.eclpCode}&skuId=${info.skuId}&type=${type}&taxCommitmentsway=${info.taxCommitmentsway}&upc=${info.upc}&emgSkuId=${info.emgSkuId}&goodsName=${info.goodsName}&goodsNameEn=${info.goodsNameEn}&brand=${info.brand}&brandEn=${info.brandEn}&xingHao=${info.xingHao}&spe=${info.spe}&unit=${info.unit}&goodsSellerPrice=${info.goodsSellerPrice}&grossWeight=${info.grossWeight}&netWeight=${info.netWeight}&actualWeight=${info.actualWeight != 'null'? info.actualWeight: ''}&volume=${info.volume}&safeDays=${info.safeDays}&salesWebSite=${info.salesWebSite}&hsCode=${info.hsCode}&hgsbys=${info.hgsbys}&function=${info.function}&use=${info.use}&composition=${info.composition}&vatRate=${info.vatRate}&taxRate=${info.taxRate}&originCountry=${info.originCountry}&originArea=${info.originArea}&manufacturer=${info.manufacturer}&roduceAddress=${info.roduceAddress}&supplier=${info.supplier}&note=${info.note}&mfnTariff=${info.mfnTariff}&penaltyTariff=${info.penaltyTariff}&phone=${info.phone}&email=${info.email}&eclpName=${info.eclpName}&ccProvider=${info.ccProvider}&delivery=${info.delivery}`
 
             const res = await fetch("https://shop-hk.jd.com/popRecording/recorded/changeRecording.do", {
             "headers": {
