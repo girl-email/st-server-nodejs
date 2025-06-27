@@ -17,7 +17,8 @@ import * as proxy from '@midwayjs/http-proxy';
 import * as crossDomain from '@midwayjs/cross-domain';
 import * as jwt from '@midwayjs/jwt';
 
-import {JDMainService}  from './service/jd.service'
+// import {JDMainService, JD}  from './service/jd.service'
+import {JDService}  from './service/jd.service'
 
 @Configuration({
     imports: [
@@ -48,7 +49,7 @@ export class ContainerLifeCycle {
         // this.app.useMiddleware([ReportMiddleware]);
         // add filter
         this.app.useFilter([NotFoundFilter, DefaultErrorFilter]);
-        // new JDService()
-        new JDMainService()
+        new JDService()
+        // new JDMainService()
     }
 }
