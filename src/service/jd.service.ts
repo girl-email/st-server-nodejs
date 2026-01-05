@@ -52,6 +52,9 @@ export class JDService {
     shopInfo = {}
 
     jdlLogin = false
+    
+    // 缓存的配送信息
+    cachedDeliveryInfo = null
 
     lastErrorNotifyTime: number
 
@@ -90,6 +93,592 @@ export class JDService {
         setTimeout(() => {
             this.querySendOrder()
         }, 1000 * 60 * 2)
+        
+        // 启动待境外出库订单自动出库任务
+        this.startAutoOutboundTask()
+    }
+    
+    // 启动自动出库定时任务
+    startAutoOutboundTask() {
+        this.logger.info('启动待境外出库订单自动出库任务');
+        this.checkAndOutboundOrders()
+    }
+    
+    // 查询待境外出库订单并执行出库
+    async checkAndOutboundOrders() {
+        try {
+            const orderList = await this.findWaitOverseasOutOrders()
+            
+            if (orderList && orderList.length > 0) {
+                this.logger.info(`发现 ${orderList.length} 个待境外出库订单`, this.shopInfo.name)
+                
+                for (const order of orderList) {
+                    try {
+                        // 执行出库操作
+                        const success = await this.executeOutbound(order)
+                        
+                        if (success) {
+                            // 出库成功，发送飞书通知
+                            await this.outboundSuccessNotify(order)
+                            this.logger.info(`订单 ${order.orderId} 出库成功`, this.shopInfo.name)
+                        } else {
+                            // 出库失败，发送失败通知
+                            await this.outboundFailNotify(order, '出库操作返回失败')
+                            this.logger.info(`订单 ${order.orderId} 出库失败`, this.shopInfo.name)
+                        }
+                    } catch (e) {
+                        this.logger.info(`订单 ${order.orderId} 出库异常:`, e, this.shopInfo.name)
+                        await this.outboundFailNotify(order, e.message || '出库异常')
+                    }
+                }
+            }
+        } catch (e) {
+            this.logger.info('查询待境外出库订单异常:', e, this.shopInfo.name)
+        }
+        
+        // 30秒后再次执行
+        setTimeout(() => {
+            this.checkAndOutboundOrders()
+        }, 30000)
+    }
+    
+    // 查询待境外出库订单列表
+    async findWaitOverseasOutOrders() {
+        try {
+            const body = {
+                "body": "9F34F7916A540DAC947F8914ECF9DB4C4AA7C5D7C8255A98CFFBFFAFBFAB218A",
+                "appId": "COCX0HBWR4BA7RDVDBIQ",
+                "api": "dsm.order.bff.orderListBffService.queryOrderTabs",
+                "v": "1.0"
+            }
+
+            const signer = new security.ParamsSign({
+                appId: "0248a",
+                preRequest: !1,
+                debug: !1,
+                onSign: function(t) {}
+            })
+
+            const signerRes = await signer.sign(body)
+            const h5st = signerRes.h5st;
+
+            const res = await fetch("https://sff.jd.com/api?v=1.0&appId=COCX0HBWR4BA7RDVDBIQ&api=dsm.order.bff.orderListBffService.queryOrderPage", {
+                "headers": {
+                    "cookie": this.JDCookies,
+                    "accept": "application/json, text/plain, */*",
+                    "accept-language": "zh-CN,zh;q=0.9",
+                    "content-type": "application/json;charset=UTF-8",
+                    "dsm-file-path": "lineation-price",
+                    "dsm-lang": "zh_CN",
+                    "dsm-platform": "pc",
+                    "dsm-site": "",
+                    "dsm-trace-id": "916c9587-b77e-4bcf-8002-3528f433deef",
+                    "h5st": h5st,
+                    "Referer": "https://shop.jd.com/jdm/trade/orders/order-list?tabType=waitOverseasOut"
+                },
+                "body": JSON.stringify({
+                    "request": {
+                        "source": "2000",
+                        "versionNo": 20240830,
+                        "data": {
+                            "purchaseId": null,
+                            "consumerName": null,
+                            "consumerMobilePhone": null,
+                            "logiNo": null,
+                            "venderRemarkLevels": [],
+                            "remarkFlag": null,
+                            "userPin": null,
+                            "itemNum": null,
+                            "storeId": null,
+                            "orderTags": [],
+                            "orderStatusTypes": ["2"],  // 待境外出库状态
+                            "idSopShipmentType": null,
+                            "carrierCompany": null,
+                            "paymentType": null,
+                            "jdiOrderSignStatus": null,
+                            "orderSalType": null,
+                            "orderBusinessType": null,
+                            "ouId": null,
+                            "purchaseOrderNo": null,
+                            "firstOrderId": null,
+                            "tradeVendorId": null,
+                            "supplierId": null,
+                            "govSubActId": null,
+                            "companyId": null,
+                            "govSubsidyStatus": null,
+                            "orderId": null,
+                            "orderIds": null,
+                            "orderTab": "waitOverseasOut",  // 待境外出库Tab
+                            "sortMode": "orderDateAsc",
+                            "current": 1,
+                            "pageSize": 50,
+                            "monthsFlag": "within6months"
+                        }
+                    },
+                    "accessContext": {
+                        "source": "web"
+                    }
+                }),
+                "method": "POST"
+            }).then(d => d.json());
+
+            return res.data?.results || []
+        } catch (e) {
+            console.log('findWaitOverseasOutOrders error:', e)
+            return []
+        }
+    }
+    
+    // 生成 traceId
+    generateTraceId(): string {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+    
+    // 获取签名
+    async getSign() {
+        const body = {
+            "body": "9F34F7916A540DAC947F8914ECF9DB4C4AA7C5D7C8255A98CFFBFFAFBFAB218A",
+            "appId": "COCX0HBWR4BA7RDVDBIQ",
+            "api": "dsm.order.bff.orderListBffService.queryOrderTabs",
+            "v": "1.0"
+        }
+
+        const signer = new security.ParamsSign({
+            appId: "0248a",
+            preRequest: !1,
+            debug: !1,
+            onSign: function(t) {}
+        })
+
+        return await signer.sign(body)
+    }
+    
+    // 获取京东快递配送信息
+    async getJdDeliveryInfo() {
+        // 如果已有缓存，直接返回
+        if (this.cachedDeliveryInfo) {
+            this.logger.info('使用缓存的配送信息:', this.cachedDeliveryInfo);
+            return this.cachedDeliveryInfo;
+        }
+
+        try {
+            const sign = await this.getSign();
+            
+            const params = {
+                "dsmRequest": {
+                    "request": {
+                        "componentBase": {
+                            "buid": "301",
+                            "language": "ZH_CN",
+                            "appId": "1214303",
+                            "appName": "seller-delivery-fe"
+                        }
+                    }
+                },
+                "accessContext": { "source": "web" }
+            };
+
+            const res = await fetch("https://sff.jd.com/api?v=1.0&appId=JJZ621CAGWRTEBI2Q0FH&api=dsm.seller.delivery.center.ElectronicService.appDeliveryInfoList", {
+                "headers": {
+                    "accept": "application/json, text/plain, */*",
+                    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                    "content-type": "application/json;charset=UTF-8",
+                    "cookie": this.JDCookies,
+                    "dsm-file-path": "lineation-price",
+                    "dsm-lang": "zh-CN",
+                    "dsm-platform": "pc",
+                    "dsm-site": "",
+                    "dsm-trace-id": this.generateTraceId(),
+                    "h5st": sign.h5st || '',
+                    "x-requested-with": "XMLHttpRequest",
+                    "origin": "https://shop.jd.com",
+                    "Referer": "https://shop.jd.com/jdm/trade/deliveries/electronicWaybill?type=2"
+                },
+                "body": JSON.stringify(params),
+                "method": "POST"
+            }).then(d => d.json());
+
+            this.logger.info('获取配送信息结果:', res);
+
+            if (res.code === 200 && res.data && Array.isArray(res.data)) {
+                // 找到京东快递 (providerNo === 2087)
+                const jdExpress = res.data.find(item => item.providerNo === 2087);
+                
+                if (jdExpress && jdExpress.epsHasApplySite && jdExpress.epsHasApplySite.length > 0) {
+                    const siteInfo = jdExpress.epsHasApplySite[0];
+                    this.cachedDeliveryInfo = {
+                        jdBranchCode: siteInfo.settlementCode,
+                        addressId: siteInfo.venderTakeId,
+                        deliveryId: siteInfo.deliveryNo || 2087
+                    };
+                    this.logger.info('获取到京东快递配送信息:', this.cachedDeliveryInfo);
+                    return this.cachedDeliveryInfo;
+                } else {
+                    this.logger.info('未找到京东快递配送信息');
+                    return null;
+                }
+            } else {
+                this.logger.info('获取配送信息失败:', res.msg || res.message);
+                return null;
+            }
+        } catch (error) {
+            this.logger.info('获取配送信息异常:', error);
+            return null;
+        }
+    }
+    
+    // 创建单号接口
+    async createOrderWaybill(orderId: string, deliveryInfo): Promise<{success: boolean, message?: string}> {
+        try {
+            const { addressId, deliveryId, jdBranchCode } = deliveryInfo;
+            
+            // 默认使用 ed-m-0001
+            const jdDeliveryWay = 'ed-m-0001';
+            
+            const params = {
+                "request": {
+                    "data": [{
+                        "venderTaskAddressId": addressId,
+                        "deliveryType": 202,
+                        "orderIds": [orderId],
+                        "deliveryNumber": {
+                            "addressId": addressId,
+                            "deliveryId": deliveryId,
+                            "jdDeliveryWay": jdDeliveryWay,
+                            "guaranteeValue": "0",
+                            "addedServiceCodes": [],
+                            "jdBranchCode": jdBranchCode,
+                            "epsOutShip": { "operationType": 1, "insureValue": "0" },
+                            "packageNum": 1,
+                            "epsOutShipVo": { "operationType": 1, "insureValue": "0" }
+                        },
+                        "coverOriginalFlag": false
+                    }], 
+                    "source": "2000", 
+                    "versionNo": 20240830
+                }, 
+                "accessContext": { "source": "web" }
+            };
+
+            const sign = await this.getSign();
+            
+            const res = await fetch("https://sff.jd.com/api?v=1.0&appId=COCX0HBWR4BA7RDVDBIQ&api=dsm.order.manage.OrderPrintOutboundService.createOrderWaybill", {
+                "headers": {
+                    "accept": "application/json, text/plain, */*",
+                    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                    "cache-control": "no-cache",
+                    "content-type": "application/json;charset=UTF-8",
+                    "cookie": this.JDCookies,
+                    "dsm-lang": "zh_CN",
+                    "dsm-platform": "pc",
+                    "dsm-site": "",
+                    "dsm-trace-id": this.generateTraceId(),
+                    "h5st": sign.h5st || '',
+                    "pragma": "no-cache",
+                    "Referer": "https://trade-order-jdm.jd.com/seller-order/orderPrint?_JDMOMID_=1509&tab=waitOutPrinted"
+                },
+                "body": JSON.stringify(params),
+                "method": "POST"
+            }).then(d => d.json());
+
+            this.logger.info(`订单 ${orderId} 创建单号结果:`, res);
+            
+            // 检查是否有失败列表
+            if (res.data && res.data.failList && res.data.failList.length > 0) {
+                const failMsg = res.data.failList.map(f => f.failReason || f.message || f.msg).join('; ');
+                return { success: false, message: failMsg };
+            }
+            
+            // 检查是否有成功列表
+            if (res.success || res.code === '0' || res.code === 0 || 
+                (res.data && (res.data.successLis?.length > 0 || res.data.successList?.length > 0))) {
+                return { success: true };
+            } else {
+                return { success: false, message: res.message || res.msg || '未知错误' };
+            }
+        } catch (error) {
+            this.logger.info(`订单 ${orderId} 创建单号失败:`, error);
+            return { success: false, message: error.message };
+        }
+    }
+    
+    // 仅出库接口
+    async onlyOutbound(orderId: string, deliveryInfo): Promise<{success: boolean, message?: string}> {
+        try {
+            const { addressId, deliveryId, jdBranchCode } = deliveryInfo;
+            
+            const jdDeliveryWay = 'ed-m-0059';
+            
+            const params = {
+                "request": {
+                    "data": [{
+                        "venderTaskAddressId": addressId,
+                        "deliveryType": 202,
+                        "orderIds": [orderId],
+                        "deliveryNumber": {
+                            "addressId": addressId,
+                            "deliveryId": deliveryId,
+                            "jdDeliveryWay": jdDeliveryWay,
+                            "guaranteeValue": "0",
+                            "addedServiceCodes": [],
+                            "jdBranchCode": jdBranchCode,
+                            "epsOutShip": { "operationType": 1, "insureValue": "0" },
+                            "packageNum": 1
+                        },
+                        "coverOriginalFlag": false
+                    }], 
+                    "source": "2000"
+                }, 
+                "accessContext": { "source": "web" }
+            };
+
+            const sign = await this.getSign();
+
+            const res = await fetch("https://sff.jd.com/api?v=1.0&appId=COCX0HBWR4BA7RDVDBIQ&api=dsm.order.manage.OrderPrintOutboundService.onlyOutbound", {
+                "headers": {
+                    "accept": "application/json, text/plain, */*",
+                    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                    "cache-control": "no-cache",
+                    "content-type": "application/json;charset=UTF-8",
+                    "cookie": this.JDCookies,
+                    "dsm-lang": "zh_CN",
+                    "dsm-platform": "pc",
+                    "dsm-site": "",
+                    "dsm-trace-id": this.generateTraceId(),
+                    "h5st": sign.h5st || '',
+                    "pragma": "no-cache",
+                    "Referer": "https://trade-order-jdm.jd.com/seller-order/orderPrint?_JDMOMID_=1509&tab=waitOutPrinted"
+                },
+                "body": JSON.stringify(params),
+                "method": "POST"
+            }).then(d => d.json());
+
+            this.logger.info(`订单 ${orderId} 出库结果:`, res);
+            
+            // 检查是否有失败列表
+            if (res.data && res.data.failList && res.data.failList.length > 0) {
+                const failMsg = res.data.failList.map(f => f.message || f.msg || f.failReason).join('; ');
+                return { success: false, message: failMsg };
+            }
+            
+            // 检查是否有成功列表
+            if (res.success || res.code === '0' || res.code === 0 || 
+                (res.data && (res.data.successLis?.length > 0 || res.data.successList?.length > 0))) {
+                return { success: true };
+            } else {
+                return { success: false, message: res.message || res.msg || '未知错误' };
+            }
+        } catch (error) {
+            this.logger.info(`订单 ${orderId} 出库失败:`, error);
+            return { success: false, message: error.message };
+        }
+    }
+    
+    // 执行出库操作（组合调用：获取配送信息 -> 创建单号 -> 出库）
+    async executeOutbound(order): Promise<boolean> {
+        const orderId = order.orderId;
+        
+        try {
+            this.logger.info(`准备出库订单: ${orderId}`, this.shopInfo.name)
+            
+            // 1. 获取配送信息
+            const deliveryInfo = await this.getJdDeliveryInfo();
+            if (!deliveryInfo) {
+                this.logger.info(`订单 ${orderId} 获取配送信息失败`, this.shopInfo.name);
+                return false;
+            }
+            
+            // 2. 创建单号
+            const createResult = await this.createOrderWaybill(orderId, deliveryInfo);
+            if (!createResult.success) {
+                this.logger.info(`订单 ${orderId} 创建单号失败: ${createResult.message}`, this.shopInfo.name);
+                // 创建单号失败不一定要终止，可能已经有单号了，继续尝试出库
+            }
+            
+            // 3. 执行出库
+            const outboundResult = await this.onlyOutbound(orderId, deliveryInfo);
+            if (!outboundResult.success) {
+                this.logger.info(`订单 ${orderId} 出库失败: ${outboundResult.message}`, this.shopInfo.name);
+                return false;
+            }
+            
+            this.logger.info(`订单 ${orderId} 出库流程完成`, this.shopInfo.name);
+            return true;
+        } catch (e) {
+            this.logger.info(`订单 ${orderId} 出库异常:`, e, this.shopInfo.name);
+            return false;
+        }
+    }
+    
+    // 格式化时间戳
+    formatTime(timestamp) {
+        if (!timestamp) return '-';
+        return dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss');
+    }
+    
+    // 出库成功飞书通知
+    async outboundSuccessNotify(order) {
+        const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+        const shopName = this.shopInfo.name
+        const orderCreateTime = this.formatTime(order.orderCreateTime)
+        const paymentConfirmTime = this.formatTime(order.paymentConfirmTime)
+
+        let card = {
+            "header": {
+                "title": {
+                    "tag": "plain_text",
+                    "content": `订单自动出库成功通知 - ${shopName}`
+                },
+                "template": "green"
+            },
+            "elements": [
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**订单信息**"
+                    }
+                },
+                {
+                    "tag": "div",
+                    "fields": [
+                        {
+                            "is_short": true,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `**订单号:** ${order.orderId}`
+                            }
+                        },
+                        {
+                            "is_short": true,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `**下单时间:** ${orderCreateTime}`
+                            }
+                        },
+                        {
+                            "is_short": true,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `**付款时间:** ${paymentConfirmTime}`
+                            }
+                        },
+                        {
+                            "is_short": true,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `**出库时间:** ${now}`
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+        
+        const webhook = 'https://open.feishu.cn/open-apis/bot/v2/hook/3e1ae178-a3cb-4ea9-b3f2-29d650c14731';
+
+        const options = {
+            method: 'POST',
+            url: webhook,
+            json: true,
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            dataType: 'json',
+            body: {
+                msg_type: 'interactive',
+                card
+            }
+        };
+        await rp(options);
+    }
+    
+    // 出库失败飞书通知
+    async outboundFailNotify(order, reason: string) {
+        const now = dayjs().format('YYYY-MM-DD HH:mm:ss')
+        const shopName = this.shopInfo.name
+        const orderCreateTime = this.formatTime(order.orderCreateTime)
+        const paymentConfirmTime = this.formatTime(order.paymentConfirmTime)
+
+        let card = {
+            "header": {
+                "title": {
+                    "tag": "plain_text",
+                    "content": `订单自动出库失败通知 - ${shopName}`
+                },
+                "template": "red"
+            },
+            "elements": [
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**订单信息**"
+                    }
+                },
+                {
+                    "tag": "div",
+                    "fields": [
+                        {
+                            "is_short": true,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `**订单号:** ${order.orderId}`
+                            }
+                        },
+                        {
+                            "is_short": true,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `**下单时间:** ${orderCreateTime}`
+                            }
+                        },
+                        {
+                            "is_short": true,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": `**付款时间:** ${paymentConfirmTime}`
+                            }
+                        }
+                    ]
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": `**失败原因:** ${reason}`
+                    }
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": `**时间:** ${now}`
+                    }
+                }
+            ]
+        }
+        
+        const webhook = this.errorNotifyUrl;
+
+        const options = {
+            method: 'POST',
+            url: webhook,
+            json: true,
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            dataType: 'json',
+            body: {
+                msg_type: 'interactive',
+                card
+            }
+        };
+        await rp(options);
     }
     // 获取暂停的订单列表
     async getStopOrderList() {
