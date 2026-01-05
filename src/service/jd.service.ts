@@ -51,6 +51,8 @@ export class JDService {
 
     shopInfo = {}
 
+    jdlLogin = false
+
     lastErrorNotifyTime: number
 
     fistErrorTime: number
@@ -65,8 +67,10 @@ export class JDService {
         }
     }
     // JD用户登录凭证
-    public JDCookies  =  "language=zh_CN; __jdv=56585130|direct|-|none|-|1703600265575; pinId=Mk_A6Nbv7MenkDneLmJDcA; unick=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; _tp=WWkrE5q1uaY3bnuvPN7mC0Jy7Qj98SqryFRfDnmAGXBfj3EZkqYEdCCNPQpAbAri; ceshi3.com=000; _pst=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; __jdu=17036002655721718781778; __USE_NEW_PAGEFRAME__=false; __USE_NEW_PAGEFRAME_VERSION__=v9; chat.jd.com=20170206; flash=2_gIf-6hV0n-3D-owJHuVRpoG10QbYhFqtf8iq_PAPhP_zARQSoNehkDTUKX2bRosNurZi5lwdeYPjJ6lyjjCj6DfYmyPcMhCrz4uSJ8Kexsq*; TrackID=1ZSq5cEcVwiknpIRBT-fNmlAXfS_Vw6wS43RS8OYzM1HL5lsU9ffdVyq7YqBUIo-a; thor=6901B38FCABE2222F893FE4DA6A41AD2E3C483C9683B39E7396B71698DCB11C14EC8CD85133AC917234988D59EE06B23F7FEF3328DD8ADAFC4EAB61C5186AE21E4701CF1263EB28EDD024710F49B0ECD72FD38E9917280EDE8E802A8F5CDEC75B3A323ADC1B43DFB4FB87AB43993FE1C74AFBCBF673834D99FD3094B90C3789565784C8BCE4E664302CF9229EC53115B; _vender_=TNK3O6PALVQGGMI642LJKJZPNN56IZEONGC7GL4VVDUXDFCCPPZQLPMTKJILMAPLE66HGX6H6FTDBCGJT2CHIQVGBEALDGQXK7G2A7QXSDNOYW6CAGCLDWEQCPKGC3KUGVRB646PDVLYUQI3BDJ566XYIWJK3BINEVNTZU4XPHS7MGPM3IRXP3KQCYUEFTMPHRWL6CUN7T6NJ73NKFWGRSQYITLV2HHO3WE5JGLOWXRT3TAPTQSGGNICGAJHKSRTNTSC54R6Q4CXGZB2XWZYYTWTKUI23OXFVXEK3PE6BHKXEXJ5ZBTE7AQ4DRO7SJ75N23E6IGHEDQCT72I5345J2I36SSU434I7P6CY7EB2AEQ7LYOCV7OPGUYC4YKELPF3MGRB5OZSQZPV5DBDCN2OVVT3WHFGAZIBXIZMBNTMAJCDBGXFURYZVWQPSCD3VDH4ZBLXMMUXPQJVVPYTHZOTYSQGOZPT3VJVDPGXA56A3LCJRUMD33LCTZXPFSMQ3XWZN2XCXEU377PYBSOJ5KDPWYFTXBCW4XVKE32CJKDJPI6QP6QVQYT5GF65B3DWLM6EW57FJQBO6Q762KFYJFVOUQ3HS27ZJL7T2BV2L72ABR2ZXET3GKM3JAUMD6LEL6M7JBTCI4GVDBYSZ7BSSE6PVI7NJIBQV5MVVI6CUJN7K7J2L4XHGOBDC35OONJCFTROGKKKV2WQVCB4JRYRBOMWGBWLI54R5PAXPC62DI; b-sec=H7A3ZVYOXG5O6CIG7HQL4J7UIHCOAOXSWXVJGQ6BOBAGYGTIVDEJSOPSWOPURFK5; _vender_new_=GI63BGTJFDBQ5VFYRAGXDIUTOUGBH4IELSA4HBAE7MB4S5HIL5QMHN2LMW7LKWD43YCKHJGXPJWTPRAEQ2QTFLJHKJUFHCXGGYIHCD7WSWY4PLU54NT3HGWB4MCDSKE4VJSCWBCJJ3C6Z2VI46TWP7ZJBWNTMPWIQ77NXK4VVKW6ABLW3LCTHZEYXQSC5L6SULQYZLAOLYQIKX2KPA4NEI5RHY4F2FAXI5CPTHP6BXFL757MRIFGERH2CQC2D3RAAFDYIVNI7B7NTLXWX5NEUT7IONYJQA2GVEUHKGHLAXO2JD6UI7C57LRQ4MAILLWECXYYZ2YLJ5HVL6HMAVKWPNRUQV7VQ4TJYKV2GUWP66XJIZDXBYZKDAO54T5BBWUA7DONKSVFDJCTNT7XV2KGI5YOGKQYDXPE7IINVADYCCF5H6RHZCCNDAPJ5WDJVY2XHWD7VVNICVT7PTKMSBW33L3BBSATV65XAXG72Z3QJ45MXA6IP2XQELXE7F47VC57UTM3EBWFRS7SWZCFQ5TPOT46JIQ6PNSYVA4453VSW4EAUWK6FRG3WAOQPSHG6BYFS7IG5ZCONS7EQAHSIUWPVDMBEDVBVCXW7ZSOG2U73QD4GGSJJ64QEOMY6A6GSGUVQ3LK46TGOU55INQYNJ63G3NK4M; universityLanguage=zh_CN; xue_userTypeCookieName50b60fba08fddfff319d0b5acc9d6eee=\"{\\\"1\\\":\\\"POP\\\"}\"; xue_userTypePageCookieName50b60fba08fddfff319d0b5acc9d6eee=1; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC675CBWSP3REU42YTAQTNJUDXURTCNE6YVKRXISUFXTDU7V3U7QL2S3GKYL2ZCNGXSSG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD46QKR5DC3ZOXYJJSMQ7LPFV7Q42XNFW3B6USLKSP4DOKX736ZCQKMJCPUFAFUHXCAGBCJZTXPG55TUBDTGHQHRURVFNRRRQCPZ7EBOWHANCWVFJHFVSTEQXZ6XDSAY7EABH3APEXJ2C7MDIZP2K6O4UWVEXBLKE677BPFI2A; __jda=191429163.17036002655721718781778.1703600266.1703729497.1703749795.11; __jdc=191429163; _BELONG_CLIENT_=WPSC4XJXWK5USS4JNZY2X7VRLR5MCBKRSVHEXABGTHDGISIQK5YOLZUXYE7IOIM7MOKO74H6CRN6WHAAR4TMDV3XZWMXZRCRT5XRNE3V356BTOB2Y7LPK66VWQK6HPTGWVXIDXDCPVE3W5WMHAIO6AT2LX2XXVNUCXR34ZWFK6HY45CORGIKOSYDYZBF27WOKTUX6BS4FZMIJWNUX6CB4JAA25ZLF7ZEKYOO4QV5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BMTUJZACIBHXQFAVLRF76VQY5PNJGGJNBEZHSFYYJA3YORRT7FB5AHCOIFQKF3W5RWNUX6CB4JAA26JNMO7AYWNUPZF5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BWZDKMOJ5BS6II53ERY6ALV3ZWPF42L4CPUHEGPYIII35KDC4FCNVCORCXFD6IVNLBEDPB2GGP4UHWNRUDOQBDIW7RZJXBA2WV5ANZOTEGUCDWYRVQS2YUTIZNZ276PRYG4N56V6YTII7MBKBC7LYHO7C555HTSBXGNRM3E466AYN67DHWVM5HQFJ4NFDO5BSMLEHDIVX2QBZKIZSDNVQVV6ZDQ; __jdb=191429163.18.17036002655721718781778|11.1703749795; 3AB9D23F7A4B3C9B=OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLU"
-    public JDLCookies = "QRCodeKey=AAEAIFhFRYdtqIVB8msq--4GGCM92VtmVDHggy1PsxBqDiBY; wlfstk_smdl=t1egvdm4c2v736l9ibe8rjme281cgww9; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; unick=h2guneluxuqs47; __jdc=64963501; __jdv=64963501|wl.jdl.com|-|referral|-|1764748672981; 3AB9D23F7A4B3C9B=JVLFOXORR5NVQ4GHUTZLVPMLPICW7GN74RQQ44FXELCHOV72POLF2SXJBMALBPAOYSCTFMDED577O3GQHMFVXPMQTQ; flash=3_3iLx1aNt2opS3vP6fZonxlt5xNCJGrW8wyviL6PZ2zLdLmmdlMcFuoAkMAubdOZDQSGlkoOpEmXZfHB-DOCS9PHA-MNgm92uA7HVvXV_kmDvFQYraqeh4oamLGE3XiOIaWVnMyfFU792BWIvCLziXDNDeBlckZ_c6m9z9s6HIfK-Lc_g3nr0tyL*; thor=6901B38FCABE2222F893FE4DA6A41AD2F94CB10CA2AED843E94F80396CBE56F8EB699B8064B0A0A88D7F6879B2F79D99AA81A2EDEE58C0C1D290C24E02A3EF899D3304C733709B20C5E126DF20CAA7B57260874C281BA8017DDC76B2F38B58391DBD02AE27A99D2866676302A977B38D9017CD7AAAFB1F7D7FEFB73B176D6FE018D6047FD1348F4F03B37734C6A947C9; light_key=AASBKE7rOxgWQziEhC_QY6yahpo8WBWXDPHj_qUWDGr4MpHYAWI36f7o4pHYRiUhS9sU6MXZ; __jda=64963501.1764748672981885664758.1764748673.1764757261.1764927905.3; __jdb=64963501.2.1764748672981885664758|3.1764927905"
+    JDCookies = ""
+    JDLCookies = ""
+    // public JDCookies  =  "1language=zh_CN; __jdv=56585130|direct|-|none|-|1703600265575; pinId=Mk_A6Nbv7MenkDneLmJDcA; unick=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; _tp=WWkrE5q1uaY3bnuvPN7mC0Jy7Qj98SqryFRfDnmAGXBfj3EZkqYEdCCNPQpAbAri; ceshi3.com=000; _pst=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; __jdu=17036002655721718781778; __USE_NEW_PAGEFRAME__=false; __USE_NEW_PAGEFRAME_VERSION__=v9; chat.jd.com=20170206; flash=2_gIf-6hV0n-3D-owJHuVRpoG10QbYhFqtf8iq_PAPhP_zARQSoNehkDTUKX2bRosNurZi5lwdeYPjJ6lyjjCj6DfYmyPcMhCrz4uSJ8Kexsq*; TrackID=1ZSq5cEcVwiknpIRBT-fNmlAXfS_Vw6wS43RS8OYzM1HL5lsU9ffdVyq7YqBUIo-a; thor=6901B38FCABE2222F893FE4DA6A41AD2E3C483C9683B39E7396B71698DCB11C14EC8CD85133AC917234988D59EE06B23F7FEF3328DD8ADAFC4EAB61C5186AE21E4701CF1263EB28EDD024710F49B0ECD72FD38E9917280EDE8E802A8F5CDEC75B3A323ADC1B43DFB4FB87AB43993FE1C74AFBCBF673834D99FD3094B90C3789565784C8BCE4E664302CF9229EC53115B; _vender_=TNK3O6PALVQGGMI642LJKJZPNN56IZEONGC7GL4VVDUXDFCCPPZQLPMTKJILMAPLE66HGX6H6FTDBCGJT2CHIQVGBEALDGQXK7G2A7QXSDNOYW6CAGCLDWEQCPKGC3KUGVRB646PDVLYUQI3BDJ566XYIWJK3BINEVNTZU4XPHS7MGPM3IRXP3KQCYUEFTMPHRWL6CUN7T6NJ73NKFWGRSQYITLV2HHO3WE5JGLOWXRT3TAPTQSGGNICGAJHKSRTNTSC54R6Q4CXGZB2XWZYYTWTKUI23OXFVXEK3PE6BHKXEXJ5ZBTE7AQ4DRO7SJ75N23E6IGHEDQCT72I5345J2I36SSU434I7P6CY7EB2AEQ7LYOCV7OPGUYC4YKELPF3MGRB5OZSQZPV5DBDCN2OVVT3WHFGAZIBXIZMBNTMAJCDBGXFURYZVWQPSCD3VDH4ZBLXMMUXPQJVVPYTHZOTYSQGOZPT3VJVDPGXA56A3LCJRUMD33LCTZXPFSMQ3XWZN2XCXEU377PYBSOJ5KDPWYFTXBCW4XVKE32CJKDJPI6QP6QVQYT5GF65B3DWLM6EW57FJQBO6Q762KFYJFVOUQ3HS27ZJL7T2BV2L72ABR2ZXET3GKM3JAUMD6LEL6M7JBTCI4GVDBYSZ7BSSE6PVI7NJIBQV5MVVI6CUJN7K7J2L4XHGOBDC35OONJCFTROGKKKV2WQVCB4JRYRBOMWGBWLI54R5PAXPC62DI; b-sec=H7A3ZVYOXG5O6CIG7HQL4J7UIHCOAOXSWXVJGQ6BOBAGYGTIVDEJSOPSWOPURFK5; _vender_new_=GI63BGTJFDBQ5VFYRAGXDIUTOUGBH4IELSA4HBAE7MB4S5HIL5QMHN2LMW7LKWD43YCKHJGXPJWTPRAEQ2QTFLJHKJUFHCXGGYIHCD7WSWY4PLU54NT3HGWB4MCDSKE4VJSCWBCJJ3C6Z2VI46TWP7ZJBWNTMPWIQ77NXK4VVKW6ABLW3LCTHZEYXQSC5L6SULQYZLAOLYQIKX2KPA4NEI5RHY4F2FAXI5CPTHP6BXFL757MRIFGERH2CQC2D3RAAFDYIVNI7B7NTLXWX5NEUT7IONYJQA2GVEUHKGHLAXO2JD6UI7C57LRQ4MAILLWECXYYZ2YLJ5HVL6HMAVKWPNRUQV7VQ4TJYKV2GUWP66XJIZDXBYZKDAO54T5BBWUA7DONKSVFDJCTNT7XV2KGI5YOGKQYDXPE7IINVADYCCF5H6RHZCCNDAPJ5WDJVY2XHWD7VVNICVT7PTKMSBW33L3BBSATV65XAXG72Z3QJ45MXA6IP2XQELXE7F47VC57UTM3EBWFRS7SWZCFQ5TPOT46JIQ6PNSYVA4453VSW4EAUWK6FRG3WAOQPSHG6BYFS7IG5ZCONS7EQAHSIUWPVDMBEDVBVCXW7ZSOG2U73QD4GGSJJ64QEOMY6A6GSGUVQ3LK46TGOU55INQYNJ63G3NK4M; universityLanguage=zh_CN; xue_userTypeCookieName50b60fba08fddfff319d0b5acc9d6eee=\"{\\\"1\\\":\\\"POP\\\"}\"; xue_userTypePageCookieName50b60fba08fddfff319d0b5acc9d6eee=1; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC675CBWSP3REU42YTAQTNJUDXURTCNE6YVKRXISUFXTDU7V3U7QL2S3GKYL2ZCNGXSSG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD46QKR5DC3ZOXYJJSMQ7LPFV7Q42XNFW3B6USLKSP4DOKX736ZCQKMJCPUFAFUHXCAGBCJZTXPG55TUBDTGHQHRURVFNRRRQCPZ7EBOWHANCWVFJHFVSTEQXZ6XDSAY7EABH3APEXJ2C7MDIZP2K6O4UWVEXBLKE677BPFI2A; __jda=191429163.17036002655721718781778.1703600266.1703729497.1703749795.11; __jdc=191429163; _BELONG_CLIENT_=WPSC4XJXWK5USS4JNZY2X7VRLR5MCBKRSVHEXABGTHDGISIQK5YOLZUXYE7IOIM7MOKO74H6CRN6WHAAR4TMDV3XZWMXZRCRT5XRNE3V356BTOB2Y7LPK66VWQK6HPTGWVXIDXDCPVE3W5WMHAIO6AT2LX2XXVNUCXR34ZWFK6HY45CORGIKOSYDYZBF27WOKTUX6BS4FZMIJWNUX6CB4JAA25ZLF7ZEKYOO4QV5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BMTUJZACIBHXQFAVLRF76VQY5PNJGGJNBEZHSFYYJA3YORRT7FB5AHCOIFQKF3W5RWNUX6CB4JAA26JNMO7AYWNUPZF5HTSBXGNRM3E242MBI6V5D4C5VJDQ3EOYCOW5BWZDKMOJ5BS6II53ERY6ALV3ZWPF42L4CPUHEGPYIII35KDC4FCNVCORCXFD6IVNLBEDPB2GGP4UHWNRUDOQBDIW7RZJXBA2WV5ANZOTEGUCDWYRVQS2YUTIZNZ276PRYG4N56V6YTII7MBKBC7LYHO7C555HTSBXGNRM3E466AYN67DHWVM5HQFJ4NFDO5BSMLEHDIVX2QBZKIZSDNVQVV6ZDQ; __jdb=191429163.18.17036002655721718781778|11.1703749795; 3AB9D23F7A4B3C9B=OGIXHURWL4W2YOBLDZKWX2VSTPUXUVFYH3HXSX6VWZ4MSS2JDBQWZMFRLY5X3GAAGK5NRR2F5XYUYPKWK4MHQUTQLU"
+    // public JDLCookies = "1QRCodeKey=AAEAIFhFRYdtqIVB8msq--4GGCM92VtmVDHggy1PsxBqDiBY; wlfstk_smdl=t1egvdm4c2v736l9ibe8rjme281cgww9; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; unick=h2guneluxuqs47; __jdc=64963501; __jdv=64963501|wl.jdl.com|-|referral|-|1764748672981; 3AB9D23F7A4B3C9B=JVLFOXORR5NVQ4GHUTZLVPMLPICW7GN74RQQ44FXELCHOV72POLF2SXJBMALBPAOYSCTFMDED577O3GQHMFVXPMQTQ; flash=3_3iLx1aNt2opS3vP6fZonxlt5xNCJGrW8wyviL6PZ2zLdLmmdlMcFuoAkMAubdOZDQSGlkoOpEmXZfHB-DOCS9PHA-MNgm92uA7HVvXV_kmDvFQYraqeh4oamLGE3XiOIaWVnMyfFU792BWIvCLziXDNDeBlckZ_c6m9z9s6HIfK-Lc_g3nr0tyL*; thor=6901B38FCABE2222F893FE4DA6A41AD2F94CB10CA2AED843E94F80396CBE56F8EB699B8064B0A0A88D7F6879B2F79D99AA81A2EDEE58C0C1D290C24E02A3EF899D3304C733709B20C5E126DF20CAA7B57260874C281BA8017DDC76B2F38B58391DBD02AE27A99D2866676302A977B38D9017CD7AAAFB1F7D7FEFB73B176D6FE018D6047FD1348F4F03B37734C6A947C9; light_key=AASBKE7rOxgWQziEhC_QY6yahpo8WBWXDPHj_qUWDGr4MpHYAWI36f7o4pHYRiUhS9sU6MXZ; __jda=64963501.1764748672981885664758.1764748673.1764757261.1764927905.3; __jdb=64963501.2.1764748672981885664758|3.1764927905"
     private beiAnList = [];
     // 暂停订单列表
     public stopList = [];
@@ -82,6 +86,7 @@ export class JDService {
         this.getStopOrderList()
         // this.getBeiAnList()
         this.getShopInfo()
+        this.querySendOrder()
         setTimeout(() => {
             this.querySendOrder()
         }, 1000 * 60 * 2)
@@ -92,7 +97,6 @@ export class JDService {
         const lastList =  this.stopList;
         try {
             const res = await this.findStopOrder()
-            console.log(res, 'getStopOrderList')
 
             if (Array.isArray(res.orderList)) {
                 this.logger.info('京东可以访问', this.thread, this.shopInfo.name)
@@ -121,16 +125,16 @@ export class JDService {
                         if (hasOtherOrder) {
                             continue;
                         }
-                        const info = await this.queryOneBeiAnInfo(skuId)
-                        if (info && info.type == 0) {
+                        const info = await this.queryOneBeiAnInfoJDL(skuId)
+                        if (info && info.goodsClearanceMode == 3) {
                             info.orderId = item.orderId
                             info.paymentConfirmTime = item.paymentConfirmTime
-                            const success = await this.updateBeiAn(info, 1)
+                            const success = await this.updateJDLbeiAn(info, 1)
                             if (success) {
                                 this.jumpSendFeiShu(
                                     {
                                         ...info,
-                                        skuName: order.skuName
+                                        skuName: order.skuName,
                                     },
                                     1
                                 )
@@ -165,12 +169,12 @@ export class JDService {
                     if(!info) continue;
                     info.orderId = item.orderId
                     info.paymentConfirmTime = item.paymentConfirmTime
-                    order.mainSkuId = info.skuId
-                    if (info.type == 1) {
+                    order.mainSkuId = skuId
+                    if (info.goodsClearanceMode == 2) {
                         if (diffTime > 12) {
                             continue
                         }
-                        const success = await this.updateBeiAn(info, 0);
+                        const success = await this.updateJDLbeiAn(info, 0);
                         if (success) {
                             this.sendFeiShu(
                                 {
@@ -191,7 +195,7 @@ export class JDService {
                             const hasOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
                             // 如果其他订单不包含此sku
                             if (!hasOrder) {
-                                const success = await this.updateBeiAn(info, 1);
+                                const success = await this.updateJDLbeiAn(info, 1);
                                 if (success) {
                                     this.tenMinutesNotify(info, 1)
                                 }
@@ -305,8 +309,8 @@ export class JDService {
 
             const res = await fetch("https://sff.jd.com/api?v=1.0&appId=COCX0HBWR4BA7RDVDBIQ&api=dsm.order.bff.orderListBffService.queryOrderPage", {
                 "headers": {
-                    "cookie": "track=89b9b089-e8f2-f23d-4606-07843f93c72e; __jdu=17627641541081298261691; __jdv=34491710|122.51.6.129:9001|-|referral|-|1764316731749; dsm-lang=zh_CN; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; _tp=WWkrE5q1uaY3bnuvPN7mC0Jy7Qj98SqryFRfDnmAGXBfj3EZkqYEdCCNPQpAbAri; pinId=Mk_A6Nbv7MenkDneLmJDcA; unick=h2guneluxuqs47; _pst=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; ceshi3.com=000; 3AB9D23F7A4B3C9B=IDPLNTQEGONBHCRXJY6YJFAW5UYMCQV4SRKMK4V33X2PPYOJUJ52X6LG5KXEU73E5EBWH25KBSH2ERJRWVRCD6TB4U; language=zh_CN; light_key=AASBKE7rOxgWQziEhC_QY6ya_umV9Rv3SqeTnnu2ORYCeKZxCa7oMLO5Mhyk-YSJgywEzcFV; TrackID=1ryc2gmKe6d_JGUiIqMCToUF_bnnPw_vKq1z8ZOHIRh4JHGFLOZn9npUhBu5cj11k; b-sec=H7A3ZVYOXG5O6CIG7HQL4J7UIEZYQDJWYTMFDX2KYQUWLZKBK6IGW44XQF5GDUD3; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC675CBWSP3REU42YTAQTNJUDXURTCNE6YVKRXISUFXTDU7V3U7QL2S3GKYL2ZCNGXSSG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD46QKR5DC3ZOXYJJSMQ7LPFV7Q42XNFW3B6USLKSP4DOKX736ZCQKMJCPUFAFUHXCAGBCJZTXPG55TUBDTGHQHRURVFOS3ZJCKOYOHVCP5J47CLAPVHLPEQXZ6XDSAY7EABH3APEXJ2C7MDIZP2K6O4UWVEXBLKE677BPFI2A; __jdc=27966078; 3AB9D23F7A4B3CSS=jdd03IDPLNTQEGONBHCRXJY6YJFAW5UYMCQV4SRKMK4V33X2PPYOJUJ52X6LG5KXEU73E5EBWH25KBSH2ERJRWVRCD6TB4UAAAAM24NCEYEAAAAAAD6ZJGUVUVQP4JAX; _s_vender_=JACFLSGV5E2PIPOF6BH6JJZZBO74RVRL4RG32TKPVORVCONKOBPE7IYOEZGM4E25IRYAJ3ZCNBFCIKWKMID535SVGZMX5VMQCSII4WL37VUIMWSVFTU46XXVPKG7XL42AI6ACRHXRMENWUQ6PCF65IN3RMOIEFV3OASICB6JFVJBOLDDEF57MKQLK5JJB32FSAEH7QTFI4ZRDMN7GA2BQM3RRWCDEXKSKRYGH2O3RI4PL637DKGP5ZEVO53JAAM2GC2GIECX4TBCIN7VU3CI5LN4KWMVW2AG37HVOW67TGK7YK4AZES4QSQOCGN2BUQC2KNCHN55V22F6ZED4CFVZG6U4ZTKGLWQYUGKE3JOYQBDEOLB64ZRDASS7WMCHZWE; __USE_NEW_PAGEFRAME__=true; __USE_NEW_PAGEFRAME_VERSION__=v11; thor=6901B38FCABE2222F893FE4DA6A41AD29F9D1289C0DAE90FE3EC2176E1EFEE233BF14D8053C86B17ED5D84C1E106776572C25C08759CFADFE65D23DD59082C6DC60600E5B6284FC9E58BB4E0A841E0F14F7D1B01C55A01D2BF6C31077DA4D29F3AAAE8EF648B604BDE854E39D7E195172E5C8D5EB91F892127BB0A0FAB928C4FD7D06006231AD92A46061D79628B0EC3; _s_base_=JACFLSGV5E2PIPOF6BH6JJZZBOEKVUETHRO5HW752CNNBR53LZPHFLHDNSWAWIXYQ7ARPVJ3ETBN4ZRXQZOCVBGTPEIH7DYA4XH3KMJCYMJDOQQRHRGOPFO43J5SK7XJQ5TBXZH6AKWYVOU7D5A2QEZ6WJFZ5QYUOK6QCALOIHPJGQL5TN7XUHK5LKTJMXPO; flash=3_RXV4RTUcsdNZzVRPylLuaagpLxsw6EZEuR1AbSJEQttOFJau4xtHyGN3OGysAzhzSxVhWKZ2JaiN5nHG86ATFZ4NNmWMN-bmvZX1ty9UIU00swQxiaGq4elbYAwWqAw97baKtMP2EAl6r7HTsdGb; __jda=27966078.17627641541081298261691.1762764154.1764746741.1764753576.9; __jdb=27966078.1.17627641541081298261691|9.1764753576",
-                    // "cookie": this.JDCookies,
+                    // "cookie": "track=89b9b089-e8f2-f23d-4606-07843f93c72e; __jdu=17627641541081298261691; __jdv=34491710|122.51.6.129:9001|-|referral|-|1764316731749; dsm-lang=zh_CN; pin=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; _tp=WWkrE5q1uaY3bnuvPN7mC0Jy7Qj98SqryFRfDnmAGXBfj3EZkqYEdCCNPQpAbAri; pinId=Mk_A6Nbv7MenkDneLmJDcA; unick=h2guneluxuqs47; _pst=%E5%86%B0%E5%86%B0%E5%B0%8F%E5%BA%97111; ceshi3.com=000; 3AB9D23F7A4B3C9B=IDPLNTQEGONBHCRXJY6YJFAW5UYMCQV4SRKMK4V33X2PPYOJUJ52X6LG5KXEU73E5EBWH25KBSH2ERJRWVRCD6TB4U; language=zh_CN; light_key=AASBKE7rOxgWQziEhC_QY6ya_umV9Rv3SqeTnnu2ORYCeKZxCa7oMLO5Mhyk-YSJgywEzcFV; TrackID=1ryc2gmKe6d_JGUiIqMCToUF_bnnPw_vKq1z8ZOHIRh4JHGFLOZn9npUhBu5cj11k; b-sec=H7A3ZVYOXG5O6CIG7HQL4J7UIEZYQDJWYTMFDX2KYQUWLZKBK6IGW44XQF5GDUD3; _base_=YKH2KDFHMOZBLCUV7NSRBWQUJPBI7JIMU5R3EFJ5UDHJ5LCU7R2NILKK5UJ6GLA2RGYT464UKXAI4Z6HPCTN4UQM3WHVQ4ENFP57OC675CBWSP3REU42YTAQTNJUDXURTCNE6YVKRXISUFXTDU7V3U7QL2S3GKYL2ZCNGXSSG4SOQWCP5WPWO6EFS7HEHMRWVKBRVHB33TFD46QKR5DC3ZOXYJJSMQ7LPFV7Q42XNFW3B6USLKSP4DOKX736ZCQKMJCPUFAFUHXCAGBCJZTXPG55TUBDTGHQHRURVFOS3ZJCKOYOHVCP5J47CLAPVHLPEQXZ6XDSAY7EABH3APEXJ2C7MDIZP2K6O4UWVEXBLKE677BPFI2A; __jdc=27966078; 3AB9D23F7A4B3CSS=jdd03IDPLNTQEGONBHCRXJY6YJFAW5UYMCQV4SRKMK4V33X2PPYOJUJ52X6LG5KXEU73E5EBWH25KBSH2ERJRWVRCD6TB4UAAAAM24NCEYEAAAAAAD6ZJGUVUVQP4JAX; _s_vender_=JACFLSGV5E2PIPOF6BH6JJZZBO74RVRL4RG32TKPVORVCONKOBPE7IYOEZGM4E25IRYAJ3ZCNBFCIKWKMID535SVGZMX5VMQCSII4WL37VUIMWSVFTU46XXVPKG7XL42AI6ACRHXRMENWUQ6PCF65IN3RMOIEFV3OASICB6JFVJBOLDDEF57MKQLK5JJB32FSAEH7QTFI4ZRDMN7GA2BQM3RRWCDEXKSKRYGH2O3RI4PL637DKGP5ZEVO53JAAM2GC2GIECX4TBCIN7VU3CI5LN4KWMVW2AG37HVOW67TGK7YK4AZES4QSQOCGN2BUQC2KNCHN55V22F6ZED4CFVZG6U4ZTKGLWQYUGKE3JOYQBDEOLB64ZRDASS7WMCHZWE; __USE_NEW_PAGEFRAME__=true; __USE_NEW_PAGEFRAME_VERSION__=v11; thor=6901B38FCABE2222F893FE4DA6A41AD29F9D1289C0DAE90FE3EC2176E1EFEE233BF14D8053C86B17ED5D84C1E106776572C25C08759CFADFE65D23DD59082C6DC60600E5B6284FC9E58BB4E0A841E0F14F7D1B01C55A01D2BF6C31077DA4D29F3AAAE8EF648B604BDE854E39D7E195172E5C8D5EB91F892127BB0A0FAB928C4FD7D06006231AD92A46061D79628B0EC3; _s_base_=JACFLSGV5E2PIPOF6BH6JJZZBOEKVUETHRO5HW752CNNBR53LZPHFLHDNSWAWIXYQ7ARPVJ3ETBN4ZRXQZOCVBGTPEIH7DYA4XH3KMJCYMJDOQQRHRGOPFO43J5SK7XJQ5TBXZH6AKWYVOU7D5A2QEZ6WJFZ5QYUOK6QCALOIHPJGQL5TN7XUHK5LKTJMXPO; flash=3_RXV4RTUcsdNZzVRPylLuaagpLxsw6EZEuR1AbSJEQttOFJau4xtHyGN3OGysAzhzSxVhWKZ2JaiN5nHG86ATFZ4NNmWMN-bmvZX1ty9UIU00swQxiaGq4elbYAwWqAw97baKtMP2EAl6r7HTsdGb; __jda=27966078.17627641541081298261691.1762764154.1764746741.1764753576.9; __jdb=27966078.1.17627641541081298261691|9.1764753576",
+                    "cookie": this.JDCookies,
                     "accept": "application/json, text/plain, */*",
                     "accept-language": "zh-CN,zh;q=0.9",
                     "content-type": "application/json;charset=UTF-8",
@@ -328,7 +332,7 @@ export class JDService {
                     // "x-rp-client": "h5_1.0.0",
                     "Referer": "https://shop.jd.com/jdm/trade/orders/order-list?tabType=waitOverseasOut"
                 },
-                "body": "{\"request\":{\"source\":\"2000\",\"versionNo\":20240830,\"data\":{\"purchaseId\":null,\"consumerName\":null,\"consumerMobilePhone\":null,\"logiNo\":null,\"venderRemarkLevels\":[],\"remarkFlag\":null,\"userPin\":null,\"itemNum\":null,\"storeId\":null,\"orderTags\":[],\"orderStatusTypes\":[\"2\"],\"idSopShipmentType\":null,\"carrierCompany\":null,\"paymentType\":null,\"jdiOrderSignStatus\":null,\"orderSalType\":null,\"orderBusinessType\":null,\"ouId\":null,\"purchaseOrderNo\":null,\"firstOrderId\":null,\"tradeVendorId\":null,\"supplierId\":null,\"govSubActId\":null,\"companyId\":null,\"govSubsidyStatus\":null,\"orderId\":null,\"orderIds\":null,\"orderTab\":\"waitOverseasOut\",\"sortMode\":\"orderDateAsc\",\"current\":1,\"pageSize\":10,\"monthsFlag\":\"within6months\"}},\"accessContext\":{\"source\":\"web\"}}",
+                "body": "{\"request\":{\"source\":\"2000\",\"versionNo\":20240830,\"data\":{\"purchaseId\":null,\"consumerName\":null,\"consumerMobilePhone\":null,\"logiNo\":null,\"venderRemarkLevels\":[],\"remarkFlag\":null,\"userPin\":null,\"itemNum\":null,\"storeId\":null,\"orderTags\":[],\"orderStatusTypes\":[\"11\"],\"idSopShipmentType\":null,\"carrierCompany\":null,\"paymentType\":null,\"jdiOrderSignStatus\":null,\"orderSalType\":null,\"orderBusinessType\":null,\"ouId\":null,\"purchaseOrderNo\":null,\"firstOrderId\":null,\"tradeVendorId\":null,\"supplierId\":null,\"govSubActId\":null,\"companyId\":null,\"govSubsidyStatus\":null,\"orderId\":null,\"orderIds\":null,\"orderTab\":\"suspend\",\"sortMode\":\"orderDateAsc\",\"current\":1,\"pageSize\":10,\"monthsFlag\":\"within6months\"}},\"accessContext\":{\"source\":\"web\"}}",
                 "method": "POST"
             }).then(async d => {
                 // try {
@@ -337,8 +341,10 @@ export class JDService {
                 // return d.text()
                 // }
             });
+
+            // console.log(res)
             return  {
-                orderList: res.data.results
+                orderList: res.data ? (res.data?.results || []) : null
             }
         } catch (e) {
             console.log('findStopOrder', e)
@@ -430,9 +436,48 @@ export class JDService {
     }
 
 
+    // 查询jd物流平台信息
+    async queryJDLInfo() {
+        const result = await fetch("https://api.jdl.com/linkSelectApi/getCustomByCustomQueryRequest", {
+            "headers": {
+                "accept": "application/json, text/plain, */*",
+                "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                "action-biz-type": "perf",
+                "appparams": "{\"appid\":\"c2c_textbook\",\"ticket_type\":\"m\"}",
+                "clientinfo": "{\"appName\":\"eclp_business_nirvana\",\"client\":\"pc\"}",
+                "content-type": "application/json;charset=utf-8",
+                "lop-dn": "bw.jdl.com",
+                "lop-trace-id": "ECLP17649463133953949",
+                "priority": "u=1, i",
+                "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "\"macOS\"",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-site",
+                "x-requested-with": "XMLHttpRequest",
+                "cookie": this.JDLCookies,
+                "Referer": "https://scsw.jdl.com/"
+            },
+            "body": "[{\"permissionCodes\":[\"ASSIGN_EDIT_POMAIN_SELLER_YSHC\",\"CGRKGL_HCFS\",\"CGRKGL_FPCSHFWB\",\"SO_EXPORT_SELLER_BTN\",\"SO_IMPORT_SELLER_BTN\",\"SO_PLATFORM_IMPORT_SELLER_BTN\",\"ASSIGN_ADD_POMAIN_SELLER\",\"ASSIGN_EXPORT_POMAIN_SELLER\",\"ASSIGN_DOWN_POMAIN_SELLER\",\"ASSIGN_BATCHIMPORTTEMPLATE_POMAIN_SELLER\",\"ASSIGN_BATCHIMPORT_POMAIN_SELLER\",\"ASSIGN_CM_POMAIN_SELLER\",\"ASSIGN_CHUKOT_POMAIN_SELLER\",\"RTS_MAINLIST_IMPORT\",\"RTS_MAINLIST_IMPORTTASK\",\"ASSIGN_APPOINTMENT_POMAIN_SPD\",\"ASSIGN_APPOINTMENT_POMAIN_TRCT\",\"POMAIN_MANAGEMENT_APPOINTMENT_SPD\",\"POMAIN_MANAGEMENT_APPOINTMENT_TRCT\",\"SUPPLYCHAIN_INBOUND_V2_SWITCH-1\",\"SUPPLYCHAIN_INBOUND_V3_SWITCH\",\"SUPPLYCHAIN_OUTBOUND_V2_SWITCH\",\"SUPPLYCHAIN_OUTBOUND_V3_SWITCH\",\"ECLP_WLSJ_DR\",\"SELLER_SHOPGOODS_STATUS\",\"SELLER_WAIT_MNT_SG_BTN\",\"SUPPLYCHAIN__INVENTORY_FC\",\"SUPPLYCHAIN__INVENTORY_SHOP\",\"SUPPLYCHAIN__INVENTORY_LIMITATION\",\"SUPPLYCHAIN_INVENTORYSETTINGS_GOODS\",\"SUPPLYCHAIN_INVENTORYSETTINGS_SHOP\",\"SUPPLYCHAIN__INVENTORY_FLOW_V2.0_SWITCH\",\"SUPPLYCHAIN__INVENTORY_FLOW_V3.0_SWITCH\",\"YWGL_THRK_THRKGL_BATCH_IMPORT_RTW\",\"YWGL_THRK_THRKGL_BATCH_IMPORT_RTW_B2C\",\"YWGL_THRK_THRKGL_IMPORT_TASK_RTW\",\"YWGL_THRK_THRKGL_TRANSFER_RTW\",\"YWGL_THRK_THRKGL_CHECK_RTW\",\"Download_Video\",\"FULFILLMENT_OUTBOUND_CRETURN_V2.0_SWITCH_1\",\"FULFILLMENT_OUTBOUND_CRETURN_V3.0_SWITCH\",\"SUPPLYCHAIN_INBOUND_RETURN_V2.0_SWITCH_1\",\"SUPPLYCHAIN_INBOUND_RETURN_V3.0_SWITCH\",\"SUPPLYCHAIN__INVENTORY_FC-V2.0_SWITCH\",\"SUPPLYCHAIN__INVENTORY_SHOP_V2.0_SWITCH\",\"SUPPLYCHAIN__INVENTORY_LIMITATION_V2.0_SWITCH\",\"SUPPLYCHAIN__INVENTORY_FC_V3.0_SWITCH\",\"SUPPLYCHAIN__INVENTORY_SHOP_V3.0_SWITCH\",\"SUPPLYCHAIN__INVENTORY_LIMITATION_V3.0_SWITCH\",\"SUPPLYCHAIN_INVENTORYSETTINGS_GOODS_V2.0_SWITCH\",\"SUPPLYCHAIN_INVENTORYSETTINGS_GOODS_V3.0_SWITCH\",\"SUPPLYCHAIN_INVENTORYSETTINGS_SHOP_V2.0_SWITCH\",\"SUPPLYCHAIN_INVENTORYSETTINGS_SHOP_V3.0_SWITCH\",\"SUPPLYCHAIN_BBI_ESG_V2.0_SWITCH\",\"SUPPLYCHAIN_BBI_ESG_V3.0_SWITCH\",\"CUT_BSC_BBI_ESG\",\"international_POP_Store_Products_Import\",\"BC_Same_Warehouse_Store_Products_Import\",\"DISTRIBUTE_SALESORDER_RETURN_BUTTON_01\",\"DISTRIBUTE_SALESORDER_CANCEL_BUTTON_01\",\"SALESORDER_DELIVERY_BUTTON\",\"INTERNATIONAL_BONDED_BUTTON\",\"SPAREPARTS_SERVICEORDER_CANCEL_BUTTON_01\",\"SPAREPARTS_SPAREPARTSORDER_CANCEL_BUTTON_01\",\"ASSIGN_BATCHMODIFICATION_POMAIN_SELLER\",\"ASSIGN_BATCHMODIFICATION_POMAIN_SELLER_DIFFERENCES\",\"ASSIGN_BATCHMODIFICATION_POMAIN_SELLER_BOXINSTORE\",\"ASSIGN_BATCHCANCEL_POMAIN_SELLER\",\"RETURN_STORAGE_RULE_ADD_BTN\",\"RETURN_STORAGE_BATCH_ENABLE_BTN\",\"RETURN_STORAGE_BATCH_DISABLED_BTN\",\"RETURN_STORAGE_BATCH_IMPORT_BTN\",\"RETURN_STORAGE_ENABLE_BTN\",\"RETURN_STORAGE_DISABLE_BTN\",\"RETURN_STORAGE_MODIFY_WAREHOUSE_BTN\",\"CREATE_ORDER_VERIFICATION_STYLE_SELECT_BTN\",\"MANAGEMENT_ORDER_CANCEL_APPOINTMENT_BTN\",\"FULFILLMENT_INBOUND_POEDIT_TEST\",\"SO_SALE_ADD_SELLER_BTN\",\"SO_SALE_EDIT_SELLER_BTN\",\"INTELLIGENTWB_JH_ANALYSIS_INBOUNDDETAIL\",\"SUPPLYCHAIN__VALUEADDED_QUERY_NEW\",\"LARGEGOODS_VALUEADDED_SERVICE\"]}]",
+            "method": "POST"
+        }).then(res => res.json());
+
+        if (!result.data) {
+            this.jdlLogin = false
+            return {}
+        }
+
+        this.jdlLogin = !!result?.data?.permissionInfo?.deptList
+
+        return result?.data?.permissionInfo?.deptList
+    }
+
+
     // 从jd物流平台查询单个备案
     async queryOneBeiAnInfoJDL(skuId, time = 0) {
         try {
+            const jdlInfo = await this.queryJDLInfo()
             const result = await fetch(`https://api.jdl.com/goodsApi/queryShopGoodsList`, {
                 "headers": {
                     "accept": "*/*",
@@ -453,26 +498,32 @@ export class JDService {
                     "cookie": this.JDLCookies
                 },
                 "body": JSON.stringify([
-                    {"commonPageRequest":{"iDisplayStart":0,"iDisplayLength":10},"params":{"spGoodsNo":skuId,"deptId":skuId,"deptNo":"EBU4418055094368"}}
+                    {"commonPageRequest":{"iDisplayStart":0,"iDisplayLength":10},"params":{"spGoodsNo":skuId,"deptId":jdlInfo.deptId,"deptNo": jdlInfo.deptNo}}
                 ]),
                 "method": "POST"
             }).then(d => d.json());
 
-            const info = result.result.result.list[0];
-            if (info && info.mainSkuId) {
-                return  await this.queryOneBeiAnInfo(info.mainSkuId)
+            if (!result.data) {
+                return false
             }
-            return  info
+
+            // const info = result.result.result.list[0];
+            // if (info && info.mainSkuId) {
+            //     return  await this.queryOneBeiAnInfo(info.mainSkuId)
+            // }
+            // console.log(result.data, 'beiAn info')
+            return  result.data.aaData[0]
         } catch (e) {
-            this.logger.info(e, 'error info')
-            if(time >= 2) {
-                return null
-            }
-            return  await this.queryOneBeiAnInfo(skuId, time + 1)
+            console.log(e,  'beian error')
+            // this.logger.info(e, 'error info')
+            // if(time >= 2) {
+            //     return null
+            // }
+            // return  await this.queryOneBeiAnInfo(skuId, time + 1)
         }
     }
 
-        // 获取下一阶段订单列表
+    // 获取下一阶段订单列表
     async getSendOrderList() {
         try {
             //     const result = await fetch("https://porder.shop.jd.com/order/orderlist", {
@@ -530,34 +581,60 @@ export class JDService {
     // 查询下一阶段订单列表
     async querySendOrder() {
         try {
-            const res = await fetch("https://porder.shop.jd.com/order/orderlist", {
+
+            const body = {
+                "body": "9F34F7916A540DAC947F8914ECF9DB4C4AA7C5D7C8255A98CFFBFFAFBFAB218A",
+                "appId": "COCX0HBWR4BA7RDVDBIQ",
+                "api": "dsm.order.bff.orderListBffService.queryOrderTabs",
+                "v": "1.0"
+            }
+
+            const signer = new security.ParamsSign({
+                appId: "0248a",
+                preRequest: !1,
+                debug: !1,
+                onSign: function(t) {}
+            })
+
+            const signerRes = await signer.sign(body)
+            const h5st = signerRes.h5st;
+
+            const res = await fetch("https://sff.jd.com/api?v=1.0&appId=COCX0HBWR4BA7RDVDBIQ&api=dsm.order.bff.orderListBffService.queryOrderPage", {
                 "headers": {
-                    "accept": "application/json, text/plain, */*",
-                    "accept-language": "zh,en-US;q=0.9,en;q=0.8,zh-CN;q=0.7",
-                    "content-type": "application/json;charset=UTF-8",
-                    "priority": "u=1, i",
-                    "sec-ch-ua": "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
-                    "sec-ch-ua-mobile": "?0",
-                    "sec-ch-ua-platform": "\"Windows\"",
-                    "sec-fetch-dest": "empty",
-                    "sec-fetch-mode": "cors",
-                    "sec-fetch-site": "same-origin",
-                    "sgm-context": "291589011154750800;291589011154750800",
+
                     "cookie": this.JDCookies,
-                    "Referer": "https://porder.shop.jd.com/order/orderlist/waitOverseasOut?t=1715068620280",
-                    "Referrer-Policy": "strict-origin-when-cross-origin"
+                    "accept": "application/json, text/plain, */*",
+                    "accept-language": "zh-CN,zh;q=0.9",
+                    "content-type": "application/json;charset=UTF-8",
+                    // "dsm-eid": "jdd03IDPLNTQEGONBHCRXJY6YJFAW5UYMCQV4SRKMK4V33X2PPYOJUJ52X6LG5KXEU73E5EBWH25KBSH2ERJRWVRCD6TB4UAAAAM247NA4CQAAAAAC2M77PRKRHGJKUX",
+                    "dsm-file-path": "lineation-price",
+                    "dsm-lang": "zh_CN",
+                    "dsm-platform": "pc",
+                    "dsm-site": "",
+                    "dsm-trace-id": "916c9587-b77e-4bcf-8002-3528f433deef",
+                    "h5st":  h5st,     // "priority": "u=1, i",
+                    // "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+                    // "sec-ch-ua-mobile": "?0",
+                    // "sec-ch-ua-platform": "\"Windows\"",
+                    // "sec-fetch-dest": "empty",
+                    // "sec-fetch-mode": "cors",
+                    // "sec-fetch-site": "same-site",
+                    // "x-referer-page": "https://shop.jd.com/jdm/trade/orders/order-list",
+                    // "x-requested-with": "XMLHttpRequest",
+                    // "x-rp-client": "h5_1.0.0",
+                    "Referer": "https://shop.jd.com/jdm/trade/orders/order-list?tabType=waitOverseasOut"
                 },
-                "body": "{\"current\":1,\"pageSize\":10,\"selectedTabName\":\"waitOverseasOut\",\"sortName\":\"desc\"}",
+                "body": "{\"request\":{\"source\":\"2000\",\"versionNo\":20240830,\"data\":{\"purchaseId\":null,\"consumerName\":null,\"consumerMobilePhone\":null,\"logiNo\":null,\"venderRemarkLevels\":[],\"remarkFlag\":null,\"userPin\":null,\"itemNum\":null,\"storeId\":null,\"orderTags\":[],\"orderStatusTypes\":[\"2\"],\"idSopShipmentType\":null,\"carrierCompany\":null,\"paymentType\":null,\"jdiOrderSignStatus\":null,\"orderSalType\":null,\"orderBusinessType\":null,\"ouId\":null,\"purchaseOrderNo\":null,\"firstOrderId\":null,\"tradeVendorId\":null,\"supplierId\":null,\"govSubActId\":null,\"companyId\":null,\"govSubsidyStatus\":null,\"orderId\":null,\"orderIds\":null,\"orderTab\":\"waitOverseasOut\",\"sortMode\":\"orderDateAsc\",\"current\":1,\"pageSize\":10,\"monthsFlag\":\"within6months\"}},\"accessContext\":{\"source\":\"web\"}}",
                 "method": "POST"
             }).then(async d => {
-                try {
-                    return d.json()
-                } catch (e) {
-                    return d.text()
-                }
+                // try {
+                return d.json()
+                // } catch (e) {
+                // return d.text()
+                // }
             });
 
-            const orderList = res.orderList || []
+            const orderList = res.data.results || []
             for await (const item of orderList) {
                 const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
                 const orderItems = item.orderItems;
@@ -567,12 +644,12 @@ export class JDService {
                 }
                 for await (const order of orderItems) {
                     const skuId = order.skuId
-                    const info = await this.queryOneBeiAnInfo(skuId)
+                    const info = await this.queryOneBeiAnInfoJDL(skuId)
                     if(!info) continue;
                     info.orderId = item.orderId
                     info.paymentConfirmTime = item.paymentConfirmTime
-                    order.mainSkuId = info.skuId
-                    if (info.type == 0) {
+                    order.mainSkuId = skuId
+                    if (info.goodsClearanceMode == 3) {
                         const diffTime = dayjs(dayjs()).diff(item.paymentConfirmTime, 'minutes')
                         // 超过十分钟
                         if (diffTime >= 13 && diffTime <= 30) {
@@ -581,7 +658,7 @@ export class JDService {
                             const hasOrder = await this.stopListHasSkuOtherOrder(order.mainSkuId, item.orderId)
                             // 如果其他订单不包含此sku
                             if (!hasOrder) {
-                                const success = await this.updateBeiAn(info, 1);
+                                const success = await this.updateJDLbeiAn(info, 1);
                                 if (success) {
                                     this.tenMinutesNotify(info, 1, true)
                                 }
@@ -744,6 +821,59 @@ export class JDService {
             }
         }
         return res.result.success;
+    }
+
+    async updateJDLbeiAn(info, type) {
+        const params = {
+            "id": info.id,
+            "status":1,
+            "image":"",
+            "remark":"",
+            "sellerGoodsSign": info.sellerGoodsSign,
+            "barcode": info.barcode,
+            "goodsClearanceMode": type ?  2: 3,
+            "globalPurchaseShippingMode": '3'
+        }
+        const res = await fetch("https://api.jdl.com/goodsApi/editShopGoods", {
+            "headers": {
+                "accept": "application/json, text/plain, */*",
+                "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+                "appparams": "{\"appid\":\"c2c_textbook\",\"ticket_type\":\"m\"}",
+                "cache-control": "no-cache",
+                "clientinfo": "{\"appName\":\"eclp_business_nirvana\",\"client\":\"pc\"}",
+                "content-type": "application/json;charset=utf-8",
+                "lop-dn": "bw.jdl.com",
+                "pragma": "no-cache",
+                "priority": "u=1, i",
+                "sec-ch-ua": "\"Not)A;Brand\";v=\"8\", \"Chromium\";v=\"138\", \"Google Chrome\";v=\"138\"",
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "\"macOS\"",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-site",
+                "x-requested-with": "XMLHttpRequest",
+                "cookie": this.JDLCookies,
+                "Referer": "https://scsw.jdl.com/"
+            },
+            "body": JSON.stringify(
+                [
+                    {
+                        "shopGoods":
+                            {
+                                ...params
+                            }
+                    }
+                ]
+            ),
+
+            "method": "POST"
+        }).then(res => {
+            return res.json()
+        })
+
+        this.logger.info(`备案状态修改成功; 商品：${info.goodsName}; skuId: ${info.isvGoodsNo}`, type, this.shopInfo.name);
+
+        return !!res.success
     }
     // 判断暂停列表存在sku
     stopListHasSku(skuId) {
@@ -959,56 +1089,56 @@ export class JDService {
                             "is_short": false,
                             "text": {
                                 "tag": "lark_md",
-                                "content": `商品sku名称: ${info1.skuName} 订单号: ${info1.orderId}; 付款时间: ${info1.paymentConfirmTime}`
+                                "content": `商品sku名称: ${info1.skuName} 订单号: ${info1.orderId};  skuId: ${info1.isvGoodsNo} ; 付款时间: ${info1.paymentConfirmTime}`
                             }
                         }
                     ]
                 },
-                {
-                    "tag": "div",
-                    "text": {
-                        "tag": "lark_md",
-                        "content": "**主备案信息** "
-                    },
-                    "fields": [
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": ''
-                            }
-                        },
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": `主备案商品名称${info1.goodsName}; 主备案skuId: ${info1.skuId}`
-                            }
-                        }
-                    ]
-                },
-                {
-                    "tag": "div",
-                    "text": {
-                        "tag": "lark_md",
-                        "content": "**主备案详情链接** "
-                    },
-                    "fields": [
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": ''
-                            }
-                        },
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": `https://shop-hk.jd.com/popRecording/recorded/queryById.html?id=${info1.id}&disabled=true&recorded=true`}
-                        }
-                    ]
-                },
+                // {
+                //     "tag": "div",
+                //     "text": {
+                //         "tag": "lark_md",
+                //         "content": "**主备案信息** "
+                //     },
+                //     "fields": [
+                //         {
+                //             "is_short": false,
+                //             "text": {
+                //                 "tag": "lark_md",
+                //                 "content": ''
+                //             }
+                //         },
+                //         {
+                //             "is_short": false,
+                //             "text": {
+                //                 "tag": "lark_md",
+                //                 "content": `主备案商品名称${info1.goodsName}; 主备案skuId: ${info1.skuId}`
+                //             }
+                //         }
+                //     ]
+                // },
+                // {
+                //     "tag": "div",
+                //     "text": {
+                //         "tag": "lark_md",
+                //         "content": "**主备案详情链接** "
+                //     },
+                //     "fields": [
+                //         {
+                //             "is_short": false,
+                //             "text": {
+                //                 "tag": "lark_md",
+                //                 "content": ''
+                //             }
+                //         },
+                //         {
+                //             "is_short": false,
+                //             "text": {
+                //                 "tag": "lark_md",
+                //                 "content": `https://shop-hk.jd.com/popRecording/recorded/queryById.html?id=${info1.id}&disabled=true&recorded=true`}
+                //         }
+                //     ]
+                // },
                 {
                     "tag": "div",
                     "text": {
@@ -1027,7 +1157,7 @@ export class JDService {
                             "is_short": false,
                             "text": {
                                 "tag": "lark_md",
-                                "content": `${type?"是": '否'} - ${now}`
+                                "content": `${type ? "直邮": '个人快件'} - ${now}`
                             }
                         }
                     ]
@@ -1099,56 +1229,56 @@ export class JDService {
                             "is_short": false,
                             "text": {
                                 "tag": "lark_md",
-                                "content": `商品sku名称: ${info1.skuName} 订单号: ${info1.orderId}; 付款时间: ${info1.paymentConfirmTime}`
+                                "content": `商品sku名称: ${info1.skuName} 订单号: ${info1.orderId};  skuId: ${info1.isvGoodsNo} ; 付款时间: ${info1.paymentConfirmTime}`
                             }
                         }
                     ]
                 },
-                {
-                    "tag": "div",
-                    "text": {
-                        "tag": "lark_md",
-                        "content": "**主备案信息** "
-                    },
-                    "fields": [
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": ''
-                            }
-                        },
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": `主备案商品名称${info1.goodsName}; 主备案skuId: ${info1.skuId}`
-                            }
-                        }
-                    ]
-                },
-                {
-                    "tag": "div",
-                    "text": {
-                        "tag": "lark_md",
-                        "content": "**主备案详情链接** "
-                    },
-                    "fields": [
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": ''
-                            }
-                        },
-                        {
-                            "is_short": false,
-                            "text": {
-                                "tag": "lark_md",
-                                "content": `https://shop-hk.jd.com/popRecording/recorded/queryById.html?id=${info1.id}&disabled=true&recorded=true`}
-                        }
-                    ]
-                },
+                // {
+                //     "tag": "div",
+                //     "text": {
+                //         "tag": "lark_md",
+                //         "content": "**主备案信息** "
+                //     },
+                //     "fields": [
+                //         {
+                //             "is_short": false,
+                //             "text": {
+                //                 "tag": "lark_md",
+                //                 "content": ''
+                //             }
+                //         },
+                //         {
+                //             "is_short": false,
+                //             "text": {
+                //                 "tag": "lark_md",
+                //                 "content": `主备案商品名称${info1.goodsName}; 主备案skuId: ${info1.skuId}`
+                //             }
+                //         }
+                //     ]
+                // },
+                // {
+                //     "tag": "div",
+                //     "text": {
+                //         "tag": "lark_md",
+                //         "content": "**主备案详情链接** "
+                //     },
+                //     "fields": [
+                //         {
+                //             "is_short": false,
+                //             "text": {
+                //                 "tag": "lark_md",
+                //                 "content": ''
+                //             }
+                //         },
+                //         {
+                //             "is_short": false,
+                //             "text": {
+                //                 "tag": "lark_md",
+                //                 "content": `https://shop-hk.jd.com/popRecording/recorded/queryById.html?id=${info1.id}&disabled=true&recorded=true`}
+                //         }
+                //     ]
+                // },
                 {
                     "tag": "div",
                     "text": {
@@ -1167,7 +1297,7 @@ export class JDService {
                             "is_short": false,
                             "text": {
                                 "tag": "lark_md",
-                                "content": `${type?"是": '否'} - ${now}`
+                                "content": `${type?"直邮": '个人快件'} - ${now}`
                             }
                         }
                     ]
@@ -1692,11 +1822,13 @@ export class JDMainService {
                 if (data[item]) {
                     this._hash[item] = new JDService(data[item])
                     this._hash[item].JDCookies = data[item].cookies
+                    this._hash[item].JDLCookies = data[item].jdlCookies
                     this._hash[item].thread = item
                 }
             } else {
                 if (!this._hash[item]) return
                 this._hash[item].JDCookies = data[item].cookies
+                this._hash[item].JDLCookies = data[item].jdlCookies
                 this.checkShop(item)
             }
         })
@@ -1745,7 +1877,9 @@ export class JDMainService {
 
     // 当前在线店铺
     async onlineShopNotify() {
-        const shopList = [...new Set([...Object.values(this._hash).filter(j => !j.die).map(item => item.shopInfo.name)])]
+        const shopList = [...new Set([...Object.values(this._hash).filter(j => !j.die && j.shopInfo?.name).map(item =>  {
+            return `${item.shopInfo.name} , 京东物流平台${item.jdlLogin ? '已登录': '未登录' }`
+        })])]
         const now = dayjs().format('YYYY-MM-DD HH:mm:ss') // '25/01/2019'
         let card = {
             "header": {
@@ -1807,6 +1941,8 @@ export class JDMainService {
     async checkShop(item) {
         // console.log('更新jd cookies成功')
         const isLogin = await this._hash[item].getShopInfo();
+        // const jdlInfo = await this._hash[item].queryJDLInfo()
+
         if(!isLogin.name) {
             const diffTime = dayjs(dayjs()).diff(this._hash[item].fistErrorTime, 'minutes')
             if(diffTime > 10) {
